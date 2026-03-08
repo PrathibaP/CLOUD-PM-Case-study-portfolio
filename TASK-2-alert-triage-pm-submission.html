@@ -1,0 +1,3432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alert Triage Workflow — PM Submission</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inconsolata:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   ROOT VARIABLES — TACTICAL AMBER THEME
+════════════════════════════════════════════ */
+:root {
+  --void: #03070d;
+  --deep: #060d16;
+  --base: #0a1520;
+  --surface: #0e1c2e;
+  --raised: #122236;
+  --border: #1a3050;
+  --border2: #234060;
+
+  --amber: #f5a623;
+  --amber-bright: #ffbe4a;
+  --amber-dim: rgba(245,166,35,0.1);
+  --amber-glow: rgba(245,166,35,0.06);
+
+  --red: #ff4444;
+  --red-dim: rgba(255,68,68,0.1);
+  --teal: #00d4aa;
+  --teal-dim: rgba(0,212,170,0.1);
+  --blue: #4db8ff;
+  --blue-dim: rgba(77,184,255,0.1);
+
+  --text: #dce8f5;
+  --text-dim: #7a9bbf;
+  --text-muted: #3d5a7a;
+
+  --font-head: 'Rajdhani', sans-serif;
+  --font-mono: 'Inconsolata', monospace;
+  --font-body: 'Lora', serif;
+}
+
+/* ════════════════════════════════════════════
+   RESET + BASE
+════════════════════════════════════════════ */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Selection */
+::selection { background: var(--amber); color: var(--void); }
+
+/* ════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--deep); }
+::-webkit-scrollbar-thumb { background: var(--amber); }
+
+/* ════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 500;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 48px;
+  background: rgba(3,7,13,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.nav-logo-mark {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  position: relative;
+}
+
+.nav-logo-mark::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: var(--amber-dim);
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color .2s;
+  position: relative;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--amber);
+  transition: width .3s;
+}
+
+.nav-links a:hover { color: var(--amber); }
+.nav-links a:hover::after { width: 100%; }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ════════════════════════════════════════════
+   DOWNLOAD BUTTON
+════════════════════════════════════════════ */
+.dl-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  background: var(--amber);
+  color: var(--void);
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.dl-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background .2s;
+}
+
+.dl-btn:hover::before { background: rgba(255,255,255,0.15); }
+.dl-btn:active { transform: scale(.97); }
+
+.dl-btn svg { flex-shrink: 0; }
+
+/* Download Modal */
+.dl-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(3,7,13,0.88);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.dl-modal-overlay.open { display: flex; }
+
+.dl-modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  width: 520px;
+  max-width: 92vw;
+  animation: modalIn .3s ease;
+}
+
+@keyframes modalIn {
+  from { opacity:0; transform:scale(.95) translateY(12px); }
+  to { opacity:1; transform:scale(1) translateY(0); }
+}
+
+.dl-modal-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dl-modal-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.dl-modal-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all .2s;
+}
+
+.dl-modal-close:hover { border-color: var(--amber); color: var(--amber); }
+
+.dl-modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 12px; }
+
+.dl-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all .2s;
+  text-align: left;
+  width: 100%;
+}
+
+.dl-option:hover {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+}
+
+.dl-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--amber-dim);
+  border: 1px solid rgba(245,166,35,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.dl-option-info {}
+.dl-option-name {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+}
+.dl-option-desc { font-size: 12px; color: var(--text-dim); font-family: var(--font-mono); }
+
+.dl-badge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(245,166,35,0.3);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════
+   HERO
+════════════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 80px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Radar animation */
+.hero-radar {
+  position: absolute;
+  top: 50%;
+  right: 8%;
+  transform: translateY(-50%);
+  width: min(550px, 50vw);
+  height: min(550px, 50vw);
+  opacity: .18;
+}
+
+.radar-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--amber);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+
+.radar-ring:nth-child(1) { width:20%; height:20%; }
+.radar-ring:nth-child(2) { width:40%; height:40%; }
+.radar-ring:nth-child(3) { width:60%; height:60%; }
+.radar-ring:nth-child(4) { width:80%; height:80%; }
+.radar-ring:nth-child(5) { width:100%; height:100%; }
+
+.radar-cross {
+  position: absolute;
+  inset: 0;
+}
+
+.radar-cross::before {
+  content:'';
+  position:absolute;
+  top:50%;left:0;right:0;
+  height:1px;
+  background:var(--amber);
+  transform:translateY(-50%);
+}
+
+.radar-cross::after {
+  content:'';
+  position:absolute;
+  left:50%;top:0;bottom:0;
+  width:1px;
+  background:var(--amber);
+  transform:translateX(-50%);
+}
+
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(245,166,35,0.3) 30deg,
+    transparent 60deg,
+    transparent 360deg
+  );
+  animation: radarSpin 4s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes radarSpin { to { transform: rotate(360deg); } }
+
+.radar-blip {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  animation: blipFade 4s ease infinite;
+}
+
+.radar-blip:nth-child(1) { top:28%; left:65%; animation-delay:.5s; }
+.radar-blip:nth-child(2) { top:62%; left:30%; animation-delay:1.2s; }
+.radar-blip:nth-child(3) { top:40%; left:20%; animation-delay:2.8s; }
+
+@keyframes blipFade {
+  0%,100% { opacity:.2; }
+  50% { opacity:1; }
+}
+
+/* Grid lines */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245,166,35,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Gradient fade bottom */
+.hero::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 300px;
+  background: linear-gradient(transparent, var(--void));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hero-content { position: relative; z-index: 2; }
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  animation: fadeSlideUp .8s ease both;
+}
+
+.hero-eyebrow-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+  padding: 5px 14px;
+  border: 1px solid rgba(245,166,35,0.4);
+  background: var(--amber-dim);
+}
+
+.hero-eyebrow-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+  max-width: 300px;
+}
+
+.hero-h1 {
+  font-family: var(--font-head);
+  font-size: clamp(54px, 8vw, 110px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: .95;
+  margin-bottom: 32px;
+  animation: fadeSlideUp .8s .1s ease both;
+}
+
+.hero-h1 .outline {
+  -webkit-text-stroke: 1px var(--amber);
+  color: transparent;
+}
+
+.hero-sub {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 48px;
+  animation: fadeSlideUp .8s .2s ease both;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 0;
+  animation: fadeSlideUp .8s .3s ease both;
+}
+
+.hero-meta-item {
+  padding: 16px 32px;
+  border: 1px solid var(--border);
+  border-right: none;
+}
+
+.hero-meta-item:last-child { border-right: 1px solid var(--border); }
+
+.hero-meta-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.hero-meta-value {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+@keyframes fadeSlideUp {
+  from { opacity:0; transform:translateY(30px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* ════════════════════════════════════════════
+   SECTION COMMON
+════════════════════════════════════════════ */
+.section {
+  padding: 100px 80px;
+  position: relative;
+}
+
+.section-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--amber);
+}
+
+.section-line {
+  width: 60px;
+  height: 1px;
+  background: var(--amber);
+}
+
+.section-cat {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.section-h2 {
+  font-family: var(--font-head);
+  font-size: clamp(34px, 4vw, 58px);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+  margin-bottom: 56px;
+}
+
+/* Reveal animation */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.reveal.in { opacity:1; transform:translateY(0); }
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+
+/* ════════════════════════════════════════════
+   PROBLEM STATEMENT
+════════════════════════════════════════════ */
+.problem-bg { background: var(--deep); }
+
+.problem-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-bottom: 2px;
+  background: var(--border);
+}
+
+.p-card {
+  background: var(--base);
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+  transition: background .3s;
+}
+
+.p-card:hover { background: var(--surface); }
+
+.p-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 0;
+  background: var(--amber);
+  transition: height .4s ease;
+}
+
+.p-card:hover::before { height: 100%; }
+
+.p-card-icon {
+  font-size: 32px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.p-card-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  color: var(--amber-bright);
+}
+
+.p-card-body {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--border);
+}
+
+.stat-card {
+  background: var(--base);
+  padding: 44px 48px;
+  position: relative;
+  overflow: hidden;
+  transition: background .3s;
+}
+
+.stat-card:hover { background: var(--surface); }
+
+.stat-card::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  font-family: var(--font-mono);
+  font-size: 60px;
+  color: rgba(245,166,35,0.04);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 54px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 10px;
+  color: var(--amber);
+}
+
+.stat-desc {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: .5px;
+  line-height: 1.6;
+}
+
+/* ════════════════════════════════════════════
+   PERSONA
+════════════════════════════════════════════ */
+.persona-wrap {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  background: var(--border);
+  gap: 2px;
+}
+
+.persona-identity {
+  background: var(--base);
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.persona-avatar-wrap {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.persona-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--amber-dim);
+  border: 2px solid var(--amber);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  position: relative;
+  z-index: 1;
+}
+
+.persona-avatar-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 1px dashed rgba(245,166,35,0.3);
+  animation: spinSlow 20s linear infinite;
+}
+
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+
+.persona-name {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.persona-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 24px;
+}
+
+.persona-company {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.ptag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid rgba(245,166,35,0.2);
+}
+
+.persona-stats {
+  margin-top: 28px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.persona-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ps-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.ps-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Persona detail grid */
+.persona-detail {
+  background: var(--base);
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.pd-block {}
+.pd-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pd-title::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background: var(--border);
+}
+
+.pd-list { list-style: none; display: flex; flex-direction: column; }
+
+.pd-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.pd-item:last-child { border-bottom: none; }
+
+.pd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.pd-dot.amber { background: var(--amber); }
+.pd-dot.red { background: var(--red); }
+.pd-dot.teal { background: var(--teal); }
+.pd-dot.blue { background: var(--blue); }
+
+/* ════════════════════════════════════════════
+   WIREFRAMES SECTION
+════════════════════════════════════════════ */
+.wf-section { background: var(--void); }
+
+/* Progress tracker */
+.wf-progress {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px;
+  gap: 0;
+}
+
+.wf-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px 24px 12px 20px;
+  border: 1px solid var(--border);
+  border-right: none;
+  transition: all .2s;
+  background: var(--base);
+  position: relative;
+}
+
+.wf-step:last-child { border-right: 1px solid var(--border); }
+
+.wf-step:hover { background: var(--surface); }
+
+.wf-step.active {
+  background: var(--amber-dim);
+  border-color: var(--amber);
+  border-right: 1px solid var(--amber);
+}
+
+.wf-step.active + .wf-step { border-left: none; }
+
+.wf-step-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.wf-step.active .wf-step-num { color: var(--amber); }
+
+.wf-step-info {}
+.wf-step-label {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+.wf-step.active .wf-step-label { color: var(--amber); }
+
+.wf-step-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: .5px;
+}
+
+/* Wireframe panels */
+.wf-panel { display: none; }
+.wf-panel.active { display: block; }
+
+/* Mock browser chrome */
+.mock-chrome {
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+}
+
+.mock-chrome-bar {
+  background: #080f1a;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chrome-dots { display:flex; gap:6px; }
+.chrome-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.chrome-dot.r { background: #ff5f57; }
+.chrome-dot.y { background: #febc2e; }
+.chrome-dot.g { background: #28c840; }
+
+.chrome-url {
+  flex: 1;
+  max-width: 380px;
+  background: var(--void);
+  border: 1px solid var(--border);
+  padding: 5px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chrome-url-lock { color: var(--teal); font-size: 10px; }
+
+/* ─── SCREEN 1: ALERT QUEUE ─── */
+.s1-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 580px;
+  background: var(--deep);
+}
+
+.sidebar {
+  background: var(--void);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+}
+
+.sidebar-brand {
+  padding: 0 16px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.sidebar-brand-name {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.sidebar-brand-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.s-nav-item {
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.s-nav-item:hover { color: var(--text-dim); background: rgba(255,255,255,0.02); }
+
+.s-nav-item.active {
+  color: var(--amber);
+  background: var(--amber-glow);
+  border-left: 2px solid var(--amber);
+}
+
+.s-nav-badge {
+  background: var(--red);
+  color: white;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.s-nav-badge.amber-b {
+  background: var(--amber);
+  color: var(--void);
+}
+
+.main-area { display: flex; flex-direction: column; }
+
+.main-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--deep);
+}
+
+.main-title {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.header-actions { display: flex; gap: 8px; }
+
+.hbtn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid var(--border2);
+  background: var(--raised);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.hbtn:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.hbtn.primary { background: var(--amber); color: var(--void); border-color: var(--amber); font-weight: 700; }
+.hbtn.primary:hover { background: var(--amber-bright); }
+
+/* Summary strip */
+.summary-strip {
+  padding: 10px 24px;
+  background: var(--base);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.sev-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all .2s;
+  border: 1px solid transparent;
+}
+
+.sev-pill:hover { border-color: var(--amber); }
+.sev-pill .dot { width:7px; height:7px; border-radius:50%; }
+.sev-pill.crit .dot { background:var(--red); box-shadow:0 0 6px var(--red); }
+.sev-pill.high .dot { background: var(--amber); box-shadow:0 0 6px var(--amber); }
+.sev-pill.med .dot { background: var(--blue); box-shadow:0 0 6px var(--blue); }
+.sev-pill.low .dot { background: var(--teal); box-shadow:0 0 6px var(--teal); }
+.sev-pill.crit { color:var(--red); }
+.sev-pill.high { color:var(--amber); }
+.sev-pill.med { color:var(--blue); }
+.sev-pill.low { color:var(--teal); }
+
+/* Alert rows */
+.alert-table { flex: 1; }
+
+.at-row {
+  display: grid;
+  grid-template-columns: 4px 1fr 180px 100px 80px 80px;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+  background: var(--deep);
+}
+
+.at-row:hover { background: var(--surface); }
+.at-row.selected { background: var(--raised); border-left: none; }
+
+.at-sev {
+  background: var(--text-muted);
+}
+.at-sev.crit { background: var(--red); }
+.at-sev.high { background: var(--amber); }
+.at-sev.med { background: var(--blue); }
+.at-sev.low { background: var(--teal); }
+
+.at-info { padding: 12px 16px; }
+
+.at-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 3px;
+  letter-spacing: .3px;
+}
+
+.at-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: .5px;
+}
+
+.at-res { padding: 12px 16px; display:flex; flex-direction:column; justify-content:center; }
+.at-res-name { font-family:var(--font-mono); font-size:11px; color:var(--text-dim); }
+.at-res-type { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-top:2px; }
+
+.at-status { padding: 12px 16px; display:flex; align-items:center; }
+
+.status-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border: 1px solid;
+}
+
+.status-tag.new { color:var(--red); border-color:rgba(255,68,68,0.4); background:var(--red-dim); }
+.status-tag.investigating { color:var(--amber); border-color:rgba(245,166,35,0.4); background:var(--amber-dim); }
+.status-tag.resolved { color:var(--teal); border-color:rgba(0,212,170,0.4); background:var(--teal-dim); }
+
+.at-score { padding: 12px 16px; display:flex; align-items:center; }
+.risk-num {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+}
+.risk-num.crit { color: var(--red); }
+.risk-num.high { color: var(--amber); }
+.risk-num.med { color: var(--blue); }
+
+.at-time { padding: 12px 16px; display:flex; align-items:center; font-family:var(--font-mono); font-size:10px; color:var(--text-muted); }
+
+/* ─── SCREEN 2: INVESTIGATION ─── */
+.s2-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  min-height: 620px;
+  background: var(--deep);
+}
+
+.s2-main { padding: 24px; border-right: 1px solid var(--border); overflow: hidden; }
+
+.alert-header-card {
+  padding: 20px 24px;
+  background: rgba(255,68,68,0.06);
+  border: 1px solid rgba(255,68,68,0.2);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ahc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--red);
+  margin-bottom: 10px;
+}
+
+.pulse-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 1.2s ease infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(255,68,68,0.4); }
+  50% { opacity:.6; box-shadow: 0 0 0 6px rgba(255,68,68,0); }
+}
+
+.ahc-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+
+.ahc-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: .5px;
+}
+
+.ahc-actions { display:flex; gap:8px; flex-shrink:0; }
+
+/* Tabbed evidence */
+.ev-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.ev-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 9px 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  transition: all .2s;
+}
+.ev-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* Evidence cards */
+.evidence-list { display:flex; flex-direction:column; gap:2px; }
+
+.ev-card {
+  background: var(--base);
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  transition: background .2s;
+}
+
+.ev-card:hover { background: var(--surface); }
+
+.ev-icon-box {
+  width: 36px; height: 36px;
+  flex-shrink: 0;
+  background: var(--amber-dim);
+  border: 1px solid rgba(245,166,35,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.ev-body {}
+.ev-card-title { font-family:var(--font-head); font-size:14px; font-weight:600; letter-spacing:.3px; margin-bottom:4px; }
+.ev-card-sub { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); margin-bottom:10px; letter-spacing:.5px; }
+
+.code-snip {
+  background: var(--void);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.9;
+  color: var(--amber-bright);
+}
+
+.code-snip .k { color: #a78bfa; }
+.code-snip .v { color: var(--teal); }
+.code-snip .s { color: var(--amber); }
+.code-snip .c { color: var(--text-muted); }
+.code-snip .bad { color: var(--red); }
+
+/* S2 sidebar */
+.s2-sidebar { padding: 20px; background: var(--void); overflow: hidden; }
+
+.s2-sb-section { margin-bottom: 20px; }
+
+.s2-sb-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.s2-sb-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Risk gauge */
+.risk-gauge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.risk-score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.risk-score-num {
+  font-family: var(--font-head);
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--red);
+  line-height: 1;
+}
+
+.risk-score-max {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.risk-bar {
+  height: 6px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--red));
+  width: 87%;
+  position: relative;
+}
+
+.risk-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: white;
+  box-shadow: 0 0 8px var(--red);
+}
+
+.kv-pair {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.kv-pair:last-child { border: none; }
+.kv-k { font-family:var(--font-mono); font-size:10px; color:var(--text-muted); letter-spacing:.5px; }
+.kv-v { font-family:var(--font-mono); font-size:10px; color:var(--text-dim); text-align:right; }
+.kv-v.danger { color:var(--red); }
+.kv-v.warn { color:var(--amber); }
+.kv-v.good { color:var(--teal); }
+
+/* Timeline */
+.tl { display:flex; flex-direction:column; }
+
+.tl-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+  position: relative;
+}
+
+.tl-item::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.tl-item:last-child::after { display: none; }
+.tl-item:last-child { padding-bottom: 0; }
+
+.tl-node {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  border: 1px solid;
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono);
+}
+
+.tl-node.crit { background:var(--red-dim); border-color:rgba(255,68,68,.5); color:var(--red); }
+.tl-node.info { background:var(--blue-dim); border-color:rgba(77,184,255,.4); color:var(--blue); }
+.tl-node.ok { background:var(--teal-dim); border-color:rgba(0,212,170,.4); color:var(--teal); }
+
+.tl-content { padding-top: 2px; }
+.tl-t { font-family:var(--font-mono); font-size:9px; color:var(--text-muted); margin-bottom:3px; letter-spacing:.5px; }
+.tl-d { font-size:12px; color:var(--text-dim); line-height:1.4; }
+
+/* ─── SCREEN 3: RESOLUTION ─── */
+.s3-layout {
+  padding: 24px;
+  background: var(--deep);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 580px;
+}
+
+.resolution-banner {
+  padding: 18px 24px;
+  background: rgba(0,212,170,0.06);
+  border: 1px solid rgba(0,212,170,0.25);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.res-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--teal-dim);
+  border: 2px solid var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  color: var(--teal);
+}
+
+.res-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--teal);
+  margin-bottom: 3px;
+}
+
+.res-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: .5px;
+}
+
+.res-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 2px;
+  background: var(--border);
+}
+
+.res-card {
+  background: var(--base);
+  padding: 20px;
+}
+
+.res-card-h {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.res-card-h::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.playbook-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.playbook-step:last-child { border: none; }
+
+.ps-check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+
+.ps-check.done { background:var(--teal-dim); color:var(--teal); border:1px solid rgba(0,212,170,.4); }
+.ps-check.pend { background:var(--border); color:var(--text-muted); border:1px solid var(--border); }
+
+.impact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.impact-row:last-child { border: none; }
+.impact-k { color:var(--text-muted); font-family:var(--font-mono); font-size:10px; }
+.impact-v { color:var(--teal); font-family:var(--font-mono); font-size:11px; font-weight:600; }
+.impact-v.warn { color:var(--amber); }
+
+.feedback-section { display:flex; flex-direction:column; gap:10px; }
+
+.fb-label { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); margin-bottom:4px; }
+
+.fb-btns { display:flex; gap:8px; }
+
+.fb-btn {
+  flex: 1;
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--raised);
+  color: var(--text-dim);
+  transition: all .2s;
+}
+
+.fb-btn:hover { border-color: var(--amber); color:var(--amber); background:var(--amber-glow); }
+.fb-btn.selected { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+
+.model-update {
+  padding: 8px 12px;
+  background: rgba(0,212,170,0.06);
+  border: 1px solid rgba(0,212,170,0.2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--teal);
+  letter-spacing: .5px;
+}
+
+/* Report form */
+.report-section {
+  background: var(--base);
+  border: 1px solid var(--border);
+  padding: 20px;
+}
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+.form-g { display:flex; flex-direction:column; gap:5px; }
+.form-label { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); }
+
+.form-input, .form-select, .form-textarea {
+  background: var(--void);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  width: 100%;
+  transition: border-color .2s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--amber); }
+.form-textarea { resize: none; height: 72px; }
+
+.form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+
+/* ════════════════════════════════════════════
+   ANNOTATIONS
+════════════════════════════════════════════ */
+.annot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 5px;
+  transition: transform .2s;
+  position: relative;
+  z-index: 10;
+}
+
+.annot:hover { transform: scale(1.3); }
+.annot:hover .annot-tip { display: block; }
+
+.annot-tip {
+  display: none;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--amber);
+  padding: 10px 13px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+  z-index: 200;
+}
+
+/* Design notes */
+.design-notes {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dn-card {
+  background: var(--base);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  padding: 16px 20px;
+}
+
+.dn-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+
+.dn-list { list-style:none; display:flex; flex-direction:column; gap:6px; }
+
+.dn-list li {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.dn-list li::before { content:'→'; color:var(--amber); flex-shrink:0; }
+
+/* ════════════════════════════════════════════
+   WRITEUP SECTION
+════════════════════════════════════════════ */
+.wu-bg { background: var(--deep); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 2px;
+  background: var(--border);
+  margin-bottom: 2px;
+}
+
+.feat-card {
+  background: var(--base);
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+  transition: background .3s;
+}
+
+.feat-card:hover { background: var(--surface); }
+
+.feat-number {
+  font-family: var(--font-mono);
+  font-size: 80px;
+  font-weight: 700;
+  color: rgba(245,166,35,0.05);
+  position: absolute;
+  bottom: 8px;
+  right: 16px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.feat-priority {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.feat-priority.p1 { color:var(--red); background:var(--red-dim); border:1px solid rgba(255,68,68,.25); }
+.feat-priority.p2 { color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,.25); }
+.feat-priority.p3 { color:var(--blue); background:var(--blue-dim); border:1px solid rgba(77,184,255,.25); }
+
+.feat-title {
+  font-family: var(--font-head);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.feat-body {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.75;
+}
+
+/* Prioritization */
+.priority-rationale {
+  background: var(--base);
+  border: 1px solid var(--border);
+  padding: 48px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+
+.pr-block {}
+.pr-block-title {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--amber);
+  margin-bottom: 16px;
+}
+
+.pr-block p {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+
+/* Metrics */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 2px;
+  background: var(--border);
+}
+
+.metric-card {
+  background: var(--base);
+  padding: 40px 32px;
+  border-top: 3px solid var(--border);
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(245,166,35,0.04));
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.metric-card:hover::before { opacity: 1; }
+
+.metric-card:nth-child(1) { border-color: var(--amber); }
+.metric-card:nth-child(2) { border-color: var(--teal); }
+.metric-card:nth-child(3) { border-color: var(--red); }
+.metric-card:nth-child(4) { border-color: var(--blue); }
+
+.metric-icon { font-size: 28px; margin-bottom: 20px; }
+.metric-label { font-family:var(--font-mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; }
+.metric-target { font-family:var(--font-head); font-size:36px; font-weight:700; margin-bottom:8px; }
+
+.metric-card:nth-child(1) .metric-target { color:var(--amber); }
+.metric-card:nth-child(2) .metric-target { color:var(--teal); }
+.metric-card:nth-child(3) .metric-target { color:var(--red); }
+.metric-card:nth-child(4) .metric-target { color:var(--blue); }
+
+.metric-desc { font-size:13px; color:var(--text-muted); line-height:1.6; }
+
+/* ════════════════════════════════════════════
+   DEV ACTION ITEMS
+════════════════════════════════════════════ */
+.dev-bg { background: var(--void); }
+
+.dev-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+
+.dev-table th {
+  background: var(--base);
+  padding: 14px 20px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.dev-table th:last-child { border-right: none; }
+
+.dev-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: top;
+  transition: background .2s;
+}
+
+.dev-table td:last-child { border-right: none; }
+.dev-table tr:last-child td { border-bottom: none; }
+.dev-table tr:hover td { background: rgba(245,166,35,0.02); }
+
+.dev-area {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 1px;
+}
+
+.dev-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+
+.effort-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.effort-tag.h { color:var(--red); background:var(--red-dim); border:1px solid rgba(255,68,68,.2); }
+.effort-tag.m { color:var(--amber); background:var(--amber-dim); border:1px solid rgba(245,166,35,.2); }
+.effort-tag.l { color:var(--teal); background:var(--teal-dim); border:1px solid rgba(0,212,170,.2); }
+
+.effort-dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.e-dot {
+  width: 8px; height: 8px;
+  border-radius: 1px;
+  background: var(--border);
+}
+
+.e-dot.filled.h { background: var(--red); }
+.e-dot.filled.m { background: var(--amber); }
+.e-dot.filled.l { background: var(--teal); }
+
+.sprint-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  display: inline-block;
+}
+
+.sprint-tag.s1 { color:var(--red); border:1px solid rgba(255,68,68,.3); background:var(--red-dim); }
+.sprint-tag.s2 { color:var(--amber); border:1px solid rgba(245,166,35,.3); background:var(--amber-dim); }
+.sprint-tag.s3 { color:var(--blue); border:1px solid rgba(77,184,255,.3); background:var(--blue-dim); }
+
+.dev-discussion {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  border-left: 2px solid var(--border);
+  padding-left: 10px;
+  margin-top: 4px;
+}
+
+/* ════════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════════ */
+.footer {
+  background: var(--void);
+  border-top: 1px solid var(--border);
+  padding: 48px 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-brand {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+
+.footer-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .section { padding: 60px 32px; }
+  .hero { padding: 0 32px 60px; }
+  .nav { padding: 0 24px; }
+  .nav-links { display: none; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .footer { padding: 48px 32px; }
+}
+
+@media (max-width: 768px) {
+  .hero { padding: 0 20px 48px; }
+  .section { padding: 48px 20px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .problem-layout { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr; }
+  .persona-wrap { grid-template-columns: 1fr; }
+  .priority-rationale { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .res-grid { grid-template-columns: 1fr; }
+  .hero-radar { display: none; }
+  .s1-layout { grid-template-columns: 1fr; }
+  .s1-layout .sidebar { display: none; }
+  .s2-layout { grid-template-columns: 1fr; }
+  .s2-sidebar { display: none; }
+  .design-notes { grid-template-columns: 1fr; }
+  .footer { flex-direction: column; text-align: center; gap: 20px; }
+}
+
+/* Print styles */
+@media print {
+  .nav, .dl-btn, .dl-modal-overlay { display: none !important; }
+  .hero { min-height: auto; padding-top: 40px; }
+  body { background: white; color: black; }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════ NAVIGATION ════ -->
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-logo">
+      <div class="nav-logo-mark">⬡</div>
+      SecOps<span style="color:var(--text-dim);font-weight:400">PM</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#persona">Persona</a></li>
+      <li><a href="#wireframes">Wireframes</a></li>
+      <li><a href="#writeup">Write-up</a></li>
+      <li><a href="#devitems">Dev Items</a></li>
+    </ul>
+  </div>
+  <div class="nav-right">
+    <button class="dl-btn" onclick="openDownload()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download All
+    </button>
+  </div>
+</nav>
+
+<!-- ════ DOWNLOAD MODAL ════ -->
+<div class="dl-modal-overlay" id="dlModal" onclick="handleOverlayClick(event)">
+  <div class="dl-modal">
+    <div class="dl-modal-header">
+      <div class="dl-modal-title">⬇ Download Deliverables</div>
+      <button class="dl-modal-close" onclick="closeDownload()">✕</button>
+    </div>
+    <div class="dl-modal-body">
+
+      <button class="dl-option" onclick="downloadHTML()">
+        <div class="dl-icon">📄</div>
+        <div class="dl-option-info">
+          <div class="dl-option-name">Complete PM Submission</div>
+          <div class="dl-option-desc">Full interactive HTML — all screens, writeup &amp; dev items</div>
+        </div>
+        <div class="dl-badge">HTML</div>
+      </button>
+
+      <button class="dl-option" onclick="downloadProblemStatement()">
+        <div class="dl-icon">🎯</div>
+        <div class="dl-option-info">
+          <div class="dl-option-name">Problem Statement + Persona</div>
+          <div class="dl-option-desc">Standalone markdown document with full analysis</div>
+        </div>
+        <div class="dl-badge">MD</div>
+      </button>
+
+      <button class="dl-option" onclick="downloadWriteup()">
+        <div class="dl-icon">📋</div>
+        <div class="dl-option-info">
+          <div class="dl-option-name">Product Write-up (1 page)</div>
+          <div class="dl-option-desc">Features, prioritization &amp; success metrics</div>
+        </div>
+        <div class="dl-badge">MD</div>
+      </button>
+
+      <button class="dl-option" onclick="downloadDevItems()">
+        <div class="dl-icon">⚙️</div>
+        <div class="dl-option-info">
+          <div class="dl-option-name">Development Action Items</div>
+          <div class="dl-option-desc">Engineering backlog with sprint assignments &amp; discussion points</div>
+        </div>
+        <div class="dl-badge">MD</div>
+      </button>
+
+      <button class="dl-option" onclick="printAll()">
+        <div class="dl-icon">🖨️</div>
+        <div class="dl-option-info">
+          <div class="dl-option-name">Print / Export as PDF</div>
+          <div class="dl-option-desc">Use browser print dialog → Save as PDF</div>
+        </div>
+        <div class="dl-badge">PDF</div>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════ HERO ════ -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-radar">
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-cross"></div>
+    <div class="radar-sweep"></div>
+    <div class="radar-blip"></div>
+    <div class="radar-blip"></div>
+    <div class="radar-blip"></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-tag">PM Case Study</span>
+      <div class="hero-eyebrow-line"></div>
+    </div>
+
+    <h1 class="hero-h1">
+      Alert<br><span class="outline">Triage</span><br>Workflow
+    </h1>
+
+    <p class="hero-sub">
+      How a unified investigation interface can cut cloud security MTTR from 4+ hours to under 45 minutes — and give engineers their cognitive bandwidth back.
+    </p>
+
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Domain</div>
+        <div class="hero-meta-value">Cloud Security Ops</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Screens</div>
+        <div class="hero-meta-value">3 Interactive</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Deliverables</div>
+        <div class="hero-meta-value">5 Downloads</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Submission</div>
+        <div class="hero-meta-value">Full PM Package</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 01 — PROBLEM STATEMENT ════ -->
+<section class="section problem-bg" id="problem">
+  <div class="section-eyebrow">
+    <span class="section-num">01</span>
+    <div class="section-line"></div>
+    <span class="section-cat">Problem Statement</span>
+  </div>
+  <h2 class="section-h2 reveal">Understanding<br>the Core Challenge</h2>
+
+  <div class="problem-layout reveal">
+    <div class="p-card">
+      <span class="p-card-icon">🔥</span>
+      <div class="p-card-title">The Problem</div>
+      <p class="p-card-body">
+        Cloud security teams are drowning in alert fatigue. Receiving hundreds to thousands of security signals daily across fragmented multi-cloud environments — AWS GuardDuty, Azure Defender, GCP SCC, Splunk — engineers must manually pivot between 6–8 disconnected tools to piece together context, assess severity, and decide on remediation.
+        <br><br>
+        This fragmented, high-friction workflow produces three cascading failures: slower Mean Time to Respond (MTTR), missed critical threats buried under noise, and chronic burnout among engineers who are the last line of defence.
+      </p>
+    </div>
+    <div class="p-card">
+      <span class="p-card-icon">💡</span>
+      <div class="p-card-title">The Opportunity</div>
+      <p class="p-card-body">
+        A unified, intelligent alert triage interface that collapses the entire investigation lifecycle — discovery → context enrichment → evidence analysis → remediation → reporting — into a single workflow engineers can trust.
+        <br><br>
+        The UX must mirror how a great security engineer actually thinks during a live incident: "What is this? How bad? What do I do?" — not "which tab was that log in?" By eliminating tool-switching overhead and automating enrichment, we can cut MTTR by 60%+ and transform reactive firefighting into confident, systematic investigation.
+      </p>
+    </div>
+  </div>
+
+  <div class="stats-row reveal reveal-delay-1">
+    <div class="stat-card" data-label="73">
+      <div class="stat-value" data-count="73" data-suffix="%">73%</div>
+      <div class="stat-desc">of cloud security alerts go uninvestigated due to volume overload, creating dangerous blind spots in enterprise security posture</div>
+    </div>
+    <div class="stat-card" data-label="4.2">
+      <div class="stat-value">4.2h</div>
+      <div class="stat-desc">average Mean Time to Respond for teams using fragmented toolsets — every minute matters when a breach is active</div>
+    </div>
+    <div class="stat-card" data-label="45">
+      <div class="stat-value" style="color:var(--teal)">45min</div>
+      <div class="stat-desc">target MTTR achievable with a unified triage workflow — a 6× improvement that meaningfully reduces breach impact</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 02 — USER PERSONA ════ -->
+<section class="section" id="persona" style="background:var(--void);">
+  <div class="section-eyebrow">
+    <span class="section-num">02</span>
+    <div class="section-line"></div>
+    <span class="section-cat">User Persona</span>
+  </div>
+  <h2 class="section-h2 reveal">Who We're<br>Designing For</h2>
+
+  <div class="persona-wrap reveal">
+    <div class="persona-identity">
+      <div class="persona-avatar-wrap">
+        <div class="persona-avatar">🛡️</div>
+        <div class="persona-avatar-ring"></div>
+      </div>
+      <div class="persona-name">Alex Chen</div>
+      <div class="persona-role">Cloud Security Engineer L4</div>
+      <div class="persona-company">FinTech Corp — Security Operations Center</div>
+
+      <div class="tags-wrap">
+        <span class="ptag">AWS</span>
+        <span class="ptag">GCP</span>
+        <span class="ptag">Azure</span>
+        <span class="ptag">Splunk</span>
+        <span class="ptag">SIEM</span>
+        <span class="ptag">Python</span>
+        <span class="ptag">Incident Response</span>
+        <span class="ptag">Threat Intel</span>
+      </div>
+
+      <div class="persona-stats">
+        <div class="persona-stat-row">
+          <span class="ps-label">Experience</span>
+          <span class="ps-value">5 years</span>
+        </div>
+        <div class="persona-stat-row">
+          <span class="ps-label">Team Size</span>
+          <span class="ps-value">8 engineers</span>
+        </div>
+        <div class="persona-stat-row">
+          <span class="ps-label">Daily Alerts</span>
+          <span class="ps-value" style="color:var(--red)">600–800</span>
+        </div>
+        <div class="persona-stat-row">
+          <span class="ps-label">Tools Used Daily</span>
+          <span class="ps-value" style="color:var(--amber)">6–8 tools</span>
+        </div>
+        <div class="persona-stat-row">
+          <span class="ps-label">On-Call Freq.</span>
+          <span class="ps-value">Every 3 weeks</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="persona-detail">
+      <div class="pd-block">
+        <div class="pd-title">Background & Context</div>
+        <ul class="pd-list">
+          <li><span class="pd-dot amber"></span>Manages security alerts across AWS GuardDuty, Azure Defender, GCP Security Command Center</li>
+          <li><span class="pd-dot amber"></span>Primary on-call responder for production security incidents in a PCI-DSS regulated environment</li>
+          <li><span class="pd-dot amber"></span>Deeply technical: writes detection rules, threat hunts, and incident runbooks in Confluence</li>
+          <li><span class="pd-dot amber"></span>Works closely with Cloud Infrastructure and DevOps teams for remediation execution</li>
+        </ul>
+      </div>
+
+      <div class="pd-block">
+        <div class="pd-title">Goals & Motivations</div>
+        <ul class="pd-list">
+          <li><span class="pd-dot teal"></span>Resolve critical alerts fast and confidently — with full context, not gut feel</li>
+          <li><span class="pd-dot teal"></span>Reduce repetitive enrichment work through automation so focus stays on analysis</li>
+          <li><span class="pd-dot teal"></span>Close false positives quickly with a documented audit trail for compliance</li>
+          <li><span class="pd-dot teal"></span>Build and share runbooks so team knowledge isn't siloed in one person's head</li>
+        </ul>
+      </div>
+
+      <div class="pd-block">
+        <div class="pd-title">Pain Points</div>
+        <ul class="pd-list">
+          <li><span class="pd-dot red"></span>Manually pivoting between 6–8 tools to gather alert context: each alert costs 20–40 minutes</li>
+          <li><span class="pd-dot red"></span>No standardized playbooks — response quality depends on who's on-call that night</li>
+          <li><span class="pd-dot red"></span>Severity labels are unreliable; ~40% of "critical" alerts are false positives</li>
+          <li><span class="pd-dot red"></span>Post-incident reports are manual, time-consuming, and often skipped under pressure</li>
+        </ul>
+      </div>
+
+      <div class="pd-block">
+        <div class="pd-title">Behaviors & Preferences</div>
+        <ul class="pd-list">
+          <li><span class="pd-dot blue"></span>Checks alert queue first thing each morning and after every lunch break</li>
+          <li><span class="pd-dot blue"></span>Prefers dense information displays and keyboard shortcuts over click-heavy UIs</li>
+          <li><span class="pd-dot blue"></span>Heavy Slack/PagerDuty user for team escalation and shift handoffs</li>
+          <li><span class="pd-dot blue"></span>Deeply skeptical of AI recommendations without explainable reasoning behind them</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 03 — WIREFRAMES ════ -->
+<section class="section wf-section" id="wireframes">
+  <div class="section-eyebrow">
+    <span class="section-num">03</span>
+    <div class="section-line"></div>
+    <span class="section-cat">Interactive Wireframes</span>
+  </div>
+  <h2 class="section-h2 reveal">3-Screen Triage<br>Workflow</h2>
+
+  <!-- Screen tabs -->
+  <div class="wf-progress reveal">
+    <div class="wf-step active" onclick="switchScreen(1,this)">
+      <div class="wf-step-num">01</div>
+      <div class="wf-step-info">
+        <div class="wf-step-label">Alert Queue</div>
+        <div class="wf-step-sub">Prioritized inbox</div>
+      </div>
+    </div>
+    <div class="wf-step" onclick="switchScreen(2,this)">
+      <div class="wf-step-num">02</div>
+      <div class="wf-step-info">
+        <div class="wf-step-label">Investigation</div>
+        <div class="wf-step-sub">Evidence & analysis</div>
+      </div>
+    </div>
+    <div class="wf-step" onclick="switchScreen(3,this)">
+      <div class="wf-step-num">03</div>
+      <div class="wf-step-info">
+        <div class="wf-step-label">Resolution</div>
+        <div class="wf-step-sub">Close & report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SCREEN 1 ─── -->
+  <div class="wf-panel active reveal" id="wfp-1">
+    <div class="mock-chrome">
+      <div class="mock-chrome-bar">
+        <div class="chrome-dots">
+          <div class="chrome-dot r"></div>
+          <div class="chrome-dot y"></div>
+          <div class="chrome-dot g"></div>
+        </div>
+        <div class="chrome-url">
+          <span class="chrome-url-lock">🔒</span>
+          app.secops.io/alerts
+        </div>
+      </div>
+
+      <div class="s1-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+          <div class="sidebar-brand">
+            <div class="sidebar-brand-name">SecOps</div>
+            <div class="sidebar-brand-sub">Threat Response Platform</div>
+          </div>
+          <div class="s-nav-item active">⚡ Alerts <span class="s-nav-badge">47</span></div>
+          <div class="s-nav-item">📊 Dashboard</div>
+          <div class="s-nav-item">🔍 Hunts</div>
+          <div class="s-nav-item">📋 Playbooks</div>
+          <div class="s-nav-item">📈 Reports</div>
+          <div class="s-nav-item" style="margin-top:auto;">⚙️ Settings</div>
+        </div>
+
+        <!-- Main area -->
+        <div class="main-area">
+          <div class="main-header">
+            <div class="main-title">
+              Alert Queue
+              <span class="annot">A<span class="annot-tip">AI risk score ranks alerts by blast radius × threat intel confidence × asset criticality — not arrival time. Engineers see the most dangerous alerts first.</span></span>
+            </div>
+            <div class="header-actions">
+              <button class="hbtn">Filter</button>
+              <button class="hbtn">Assign</button>
+              <button class="hbtn primary" onclick="switchScreen(2,document.querySelectorAll('.wf-step')[1])">Triage → </button>
+            </div>
+          </div>
+
+          <div class="summary-strip">
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;">SEVERITY:</span>
+            <span class="sev-pill crit"><span class="dot"></span> Critical (8)</span>
+            <span class="sev-pill high"><span class="dot"></span> High (14)</span>
+            <span class="sev-pill med"><span class="dot"></span> Medium (19)</span>
+            <span class="sev-pill low"><span class="dot"></span> Low (6)</span>
+            <span class="annot" style="margin-left:8px;">B<span class="annot-tip">One-click severity filter reduces cognitive load. Engineers can instantly scope to threats that need immediate attention without scrolling through noise.</span></span>
+          </div>
+
+          <div class="alert-table">
+            <!-- Header row -->
+            <div class="at-row" style="cursor:default;background:var(--base);border-bottom:1px solid var(--border2);">
+              <div class="at-sev" style="background:transparent;"></div>
+              <div class="at-info" style="padding:8px 16px;">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Alert</span>
+              </div>
+              <div class="at-res" style="padding:8px 16px;">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Resource</span>
+              </div>
+              <div class="at-status" style="padding:8px 16px;">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Status</span>
+              </div>
+              <div class="at-score" style="padding:8px 16px;">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Risk</span>
+              </div>
+              <div class="at-time" style="padding:8px 16px;">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Age</span>
+              </div>
+            </div>
+
+            <!-- Row 1 — Critical, selected -->
+            <div class="at-row selected" onclick="switchScreen(2,document.querySelectorAll('.wf-step')[1])">
+              <div class="at-sev crit"></div>
+              <div class="at-info">
+                <div class="at-title">Cryptomining Activity Detected</div>
+                <div class="at-source">GuardDuty → CryptoCurrency:EC2/BitcoinTool.B!DNS · #ALT-2847</div>
+              </div>
+              <div class="at-res">
+                <div class="at-res-name">prod-api-server-03</div>
+                <div class="at-res-type">EC2 · us-east-1</div>
+              </div>
+              <div class="at-status"><span class="status-tag new">NEW</span></div>
+              <div class="at-score"><span class="risk-num crit">87</span></div>
+              <div class="at-time">2m ago</div>
+            </div>
+
+            <!-- Row 2 — Critical -->
+            <div class="at-row" onclick="switchScreen(2,document.querySelectorAll('.wf-step')[1])">
+              <div class="at-sev crit"></div>
+              <div class="at-info">
+                <div class="at-title">IAM Policy Allows All Actions (*:*)</div>
+                <div class="at-source">AWS Config → IAM_POLICY_NO_STATEMENTS_WITH_ADMIN_ACCESS · #ALT-2846</div>
+              </div>
+              <div class="at-res">
+                <div class="at-res-name">DevOps-AdminPolicy</div>
+                <div class="at-res-type">IAM Policy · Global</div>
+              </div>
+              <div class="at-status"><span class="status-tag new">NEW</span></div>
+              <div class="at-score"><span class="risk-num crit">82</span></div>
+              <div class="at-time">18m ago</div>
+            </div>
+
+            <!-- Row 3 — High -->
+            <div class="at-row" onclick="switchScreen(2,document.querySelectorAll('.wf-step')[1])">
+              <div class="at-sev high"></div>
+              <div class="at-info">
+                <div class="at-title">Unusual API Calls from Root Account</div>
+                <div class="at-source">CloudTrail → UnauthorizedAPICall from root principal · #ALT-2845</div>
+              </div>
+              <div class="at-res">
+                <div class="at-res-name">Root Account (Production)</div>
+                <div class="at-res-type">IAM · us-west-2</div>
+              </div>
+              <div class="at-status"><span class="status-tag investigating">ACTIVE</span></div>
+              <div class="at-score"><span class="risk-num high">71</span></div>
+              <div class="at-time">34m ago</div>
+            </div>
+
+            <!-- Row 4 — Medium -->
+            <div class="at-row">
+              <div class="at-sev med"></div>
+              <div class="at-info">
+                <div class="at-title">S3 Bucket Public Read Access Enabled</div>
+                <div class="at-source">Security Hub → S3.2 · Public ACL grants read to AllUsers · #ALT-2844</div>
+              </div>
+              <div class="at-res">
+                <div class="at-res-name">prod-customer-exports-2024</div>
+                <div class="at-res-type">S3 Bucket · us-east-1</div>
+              </div>
+              <div class="at-status"><span class="status-tag investigating">ACTIVE</span></div>
+              <div class="at-score"><span class="risk-num med" style="color:var(--blue)">54</span></div>
+              <div class="at-time">1h ago</div>
+            </div>
+
+            <!-- Row 5 — Low -->
+            <div class="at-row">
+              <div class="at-sev low"></div>
+              <div class="at-info">
+                <div class="at-title">MFA Not Enabled for IAM User</div>
+                <div class="at-source">Security Hub → IAM.5 · Non-compliant MFA config · #ALT-2843</div>
+              </div>
+              <div class="at-res">
+                <div class="at-res-name">john.doe@company.io</div>
+                <div class="at-res-type">IAM User · Global</div>
+              </div>
+              <div class="at-status"><span class="status-tag resolved">CLOSED</span></div>
+              <div class="at-score"><span class="risk-num" style="color:var(--teal);font-size:18px;">23</span></div>
+              <div class="at-time">3h ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="design-notes">
+      <div class="dn-card">
+        <div class="dn-title">📝 Design Decisions</div>
+        <ul class="dn-list">
+          <li>Left severity strip provides instant visual triage without reading text</li>
+          <li>Numeric risk score (0–100) replaces subjective "Critical/High" labels — engineers can set escalation thresholds</li>
+          <li>Resource name + region visible in queue — no click-in needed for basic context</li>
+          <li>"Mine" filter scope reduces noise for on-call engineer</li>
+        </ul>
+      </div>
+      <div class="dn-card">
+        <div class="dn-title">⌨️ Keyboard Shortcuts</div>
+        <ul class="dn-list">
+          <li><code style="color:var(--amber);background:var(--amber-dim);padding:1px 6px;font-family:var(--font-mono);">↑↓</code> Navigate alert rows</li>
+          <li><code style="color:var(--amber);background:var(--amber-dim);padding:1px 6px;font-family:var(--font-mono);">Enter</code> Open alert investigation</li>
+          <li><code style="color:var(--amber);background:var(--amber-dim);padding:1px 6px;font-family:var(--font-mono);">A</code> Assign alert to self</li>
+          <li><code style="color:var(--amber);background:var(--amber-dim);padding:1px 6px;font-family:var(--font-mono);">F</code> Flag as false positive</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SCREEN 2 ─── -->
+  <div class="wf-panel" id="wfp-2">
+    <div class="mock-chrome">
+      <div class="mock-chrome-bar">
+        <div class="chrome-dots">
+          <div class="chrome-dot r"></div>
+          <div class="chrome-dot y"></div>
+          <div class="chrome-dot g"></div>
+        </div>
+        <div class="chrome-url">
+          <span class="chrome-url-lock">🔒</span>
+          app.secops.io/alerts/ALT-2847/investigate
+        </div>
+      </div>
+
+      <div class="s2-layout">
+        <div class="s2-main">
+          <!-- Alert header -->
+          <div class="alert-header-card">
+            <div>
+              <div class="ahc-badge">
+                <div class="pulse-dot"></div>
+                CRITICAL — LIVE INCIDENT
+              </div>
+              <div class="ahc-title">
+                Cryptomining Activity Detected
+                <span class="annot">A<span class="annot-tip">AI-generated one-line summary appears here for non-specialist first responders. E.g. "EC2 instance querying known mining pool DNS — likely RCE, credential harvesting risk."</span></span>
+              </div>
+              <div class="ahc-meta">#ALT-2847 · GuardDuty · prod-api-server-03 (us-east-1) · Detected 2m ago · Assigned to Alex Chen</div>
+            </div>
+            <div class="ahc-actions">
+              <button class="hbtn" style="color:var(--red);border-color:rgba(255,68,68,.4);background:var(--red-dim);">🚩 Escalate</button>
+              <button class="hbtn" onclick="switchScreen(3,document.querySelectorAll('.wf-step')[2])">Resolve →</button>
+              <button class="hbtn primary">⚡ Run Playbook</button>
+            </div>
+          </div>
+
+          <!-- Evidence tabs -->
+          <div class="ev-tabs">
+            <button class="ev-tab active">Evidence</button>
+            <button class="ev-tab">Timeline</button>
+            <button class="ev-tab">Raw Logs</button>
+            <button class="ev-tab">Similar (3)</button>
+          </div>
+
+          <div class="evidence-list">
+            <div class="ev-card">
+              <div class="ev-icon-box">🌐</div>
+              <div class="ev-body">
+                <div class="ev-card-title">
+                  Malicious DNS Query to Crypto Mining Pool
+                  <span class="annot">B<span class="annot-tip">Auto-enriched from 3 threat intel feeds (VirusTotal, Shodan, internal reputation DB). Engineer doesn't need to copy-paste IOCs into external tools.</span></span>
+                </div>
+                <div class="ev-card-sub">EC2 instance queried known cryptomining pool domain · Threat intel: CONFIRMED MALICIOUS</div>
+                <div class="code-snip">
+<span class="k">source_ip</span>:     <span class="v">10.0.2.47</span>  <span class="c">(prod-api-server-03)</span>
+<span class="k">destination</span>:   <span class="s">"pool.minexmr.com"</span>  <span class="bad">⚠ 3 feeds corroborate malicious</span>
+<span class="k">first_seen</span>:    <span class="v">2024-01-15T09:23:14Z</span>
+<span class="k">protocol</span>:      <span class="v">DNS/UDP:53</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ev-card">
+              <div class="ev-icon-box">💻</div>
+              <div class="ev-body">
+                <div class="ev-card-title">Anomalous Process Execution via Apache2</div>
+                <div class="ev-card-sub">xmrig mining binary spawned by web server — high-confidence RCE indicator</div>
+                <div class="code-snip">
+<span class="k">process</span>:       <span class="bad">"xmrig"</span>  <span class="c">(known mining binary)</span>
+<span class="k">parent</span>:        <span class="bad">"apache2"</span>  <span class="c">← unexpected parent process!</span>
+<span class="k">cpu_usage</span>:     <span class="bad">94.3%</span>  <span class="c">(baseline: ~12%)</span>
+<span class="k">runtime</span>:       <span class="v">47 minutes</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ev-card">
+              <div class="ev-icon-box">🔑</div>
+              <div class="ev-body">
+                <div class="ev-card-title">
+                  IMDS Credential Harvesting Attempt
+                  <span class="annot">C<span class="annot-tip">Lateral movement signals auto-correlated across services. Saves engineer from manually joining CloudTrail + VPC Flow Logs + GuardDuty to spot this pattern.</span></span>
+                </div>
+                <div class="ev-card-sub">Instance Metadata Service queried 14× in 3 minutes — possible IAM role credential theft for lateral movement</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Investigation sidebar -->
+        <div class="s2-sidebar">
+          <div class="s2-sb-section">
+            <div class="s2-sb-title">Risk Score
+              <span class="annot" style="background:var(--surface);">D<span class="annot-tip">Composite score: asset criticality (40%) + threat intel confidence (35%) + lateral movement signals (25%). Replaces subjective gut-feel escalation decisions.</span></span>
+            </div>
+            <div class="risk-gauge">
+              <div class="risk-score-display">
+                <div class="risk-score-num">87</div>
+                <div class="risk-score-max">/100</div>
+              </div>
+              <div class="risk-bar"><div class="risk-bar-fill"></div></div>
+              <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:.5px;">blast radius · threat intel · asset criticality</div>
+            </div>
+          </div>
+
+          <div class="s2-sb-section">
+            <div class="s2-sb-title">Asset Context</div>
+            <div class="kv-pair"><span class="kv-k">Instance</span><span class="kv-v">prod-api-server-03</span></div>
+            <div class="kv-pair"><span class="kv-k">Owner</span><span class="kv-v">@backend-team</span></div>
+            <div class="kv-pair"><span class="kv-k">Criticality</span><span class="kv-v danger">PRODUCTION</span></div>
+            <div class="kv-pair"><span class="kv-k">VPC</span><span class="kv-v">vpc-0a3f2c</span></div>
+            <div class="kv-pair"><span class="kv-k">Region</span><span class="kv-v">us-east-1</span></div>
+          </div>
+
+          <div class="s2-sb-section">
+            <div class="s2-sb-title">Live Timeline</div>
+            <div class="tl">
+              <div class="tl-item">
+                <div class="tl-node crit">!</div>
+                <div class="tl-content">
+                  <div class="tl-t">09:23:14 AM UTC</div>
+                  <div class="tl-d">GuardDuty alert triggered</div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-node info">→</div>
+                <div class="tl-content">
+                  <div class="tl-t">09:25:02 AM UTC</div>
+                  <div class="tl-d">Auto-assigned to Alex Chen</div>
+                </div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-node ok">⚡</div>
+                <div class="tl-content">
+                  <div class="tl-t">09:25:08 AM UTC</div>
+                  <div class="tl-d">Threat intel enriched (3 feeds)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="s2-sb-section">
+            <div class="s2-sb-title">Suggested Actions</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button class="hbtn primary" style="text-align:left;" onclick="switchScreen(3,document.querySelectorAll('.wf-step')[2])">⬡ Isolate Instance →</button>
+              <button class="hbtn" style="text-align:left;">🔍 Check Similar Hosts</button>
+              <button class="hbtn" style="text-align:left;">📋 Open Ticket</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="design-notes">
+      <div class="dn-card">
+        <div class="dn-title">📝 Design Decisions</div>
+        <ul class="dn-list">
+          <li>Zero context switching — all enrichment is automatic. Engineer stays on one screen throughout investigation</li>
+          <li>Evidence cards group related signals into an investigative narrative, not raw log dumps</li>
+          <li>Risk score gives a single number for escalation — removes subjective "gut feel" decisions</li>
+        </ul>
+      </div>
+      <div class="dn-card">
+        <div class="dn-title">💡 AI Assist Features</div>
+        <ul class="dn-list">
+          <li>Natural language alert summary for non-specialist first responders</li>
+          <li>Cross-service correlation (CloudTrail + VPC Flow Logs + GuardDuty) auto-surfaced</li>
+          <li>Suggested remediation actions ranked by effectiveness &amp; blast radius risk</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SCREEN 3 ─── -->
+  <div class="wf-panel" id="wfp-3">
+    <div class="mock-chrome">
+      <div class="mock-chrome-bar">
+        <div class="chrome-dots">
+          <div class="chrome-dot r"></div>
+          <div class="chrome-dot y"></div>
+          <div class="chrome-dot g"></div>
+        </div>
+        <div class="chrome-url">
+          <span class="chrome-url-lock">🔒</span>
+          app.secops.io/alerts/ALT-2847/resolve
+        </div>
+      </div>
+
+      <div class="s3-layout">
+        <div class="resolution-banner">
+          <div class="res-icon">✓</div>
+          <div>
+            <div class="res-title">Alert Contained & Remediated</div>
+            <div class="res-meta">#ALT-2847 · Total response time: 23 minutes · MTTR target: 45 min ✓ · Resolved by Alex Chen</div>
+          </div>
+          <div style="margin-left:auto;font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--teal);">✓</div>
+        </div>
+
+        <div class="res-grid">
+          <!-- Playbook -->
+          <div class="res-card">
+            <div class="res-card-h">
+              Playbook Execution
+              <span class="annot">A<span class="annot-tip">Playbook steps are pre-defined per alert type and auto-checked as actions are taken, providing a verified compliance audit trail with zero extra effort.</span></span>
+            </div>
+            <div class="playbook-step"><span class="ps-check done">✓</span>Isolate EC2 from VPC (security group)</div>
+            <div class="playbook-step"><span class="ps-check done">✓</span>Revoke IAM role credentials</div>
+            <div class="playbook-step"><span class="ps-check done">✓</span>Block malicious IPs in NACLs</div>
+            <div class="playbook-step"><span class="ps-check done">✓</span>Snapshot disk for forensic analysis</div>
+            <div class="playbook-step"><span class="ps-check done">✓</span>Notify owner: @backend-team</div>
+            <div class="playbook-step"><span class="ps-check pend">○</span>Patch CVE on replacement instance</div>
+          </div>
+
+          <!-- Impact -->
+          <div class="res-card">
+            <div class="res-card-h">Impact Summary</div>
+            <div class="impact-row"><span class="impact-k">Blast Radius</span><span class="impact-v">Contained</span></div>
+            <div class="impact-row"><span class="impact-k">Data Exfiltration</span><span class="impact-v">None Detected</span></div>
+            <div class="impact-row"><span class="impact-k">Compromise Window</span><span class="impact-v warn">~47 min</span></div>
+            <div class="impact-row"><span class="impact-k">Systems Affected</span><span class="impact-v warn">1 EC2 Instance</span></div>
+            <div class="impact-row"><span class="impact-k">Credentials Rotated</span><span class="impact-v">3 keys</span></div>
+            <div class="impact-row"><span class="impact-k">Response Time</span><span class="impact-v">23 min ✓</span></div>
+          </div>
+
+          <!-- Feedback -->
+          <div class="res-card">
+            <div class="res-card-h">
+              Detection Feedback
+              <span class="annot">B<span class="annot-tip">Engineer verdict trains the alert ranking model. Over time, system learns team-specific signal/noise patterns — measurably reducing false positives quarter-over-quarter.</span></span>
+            </div>
+            <div class="feedback-section">
+              <div>
+                <div class="fb-label">Was this a true positive?</div>
+                <div class="fb-btns">
+                  <button class="fb-btn selected">✓ True Positive</button>
+                  <button class="fb-btn">✕ False Positive</button>
+                </div>
+              </div>
+              <div>
+                <div class="fb-label">Root Cause Classification</div>
+                <select class="form-select">
+                  <option>RCE via Apache (CVE-2023-44487)</option>
+                  <option>Compromised credentials</option>
+                  <option>Insider threat</option>
+                </select>
+              </div>
+              <div class="model-update">⬡ Model updated: similar alerts +12% rank</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report form -->
+        <div class="report-section">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:16px;">
+            Auto-Generated Incident Report
+            <span class="annot">C<span class="annot-tip">Report is AI-drafted from all triage actions. Engineer reviews and edits rather than writing from scratch — saves 30+ minutes of post-incident toil.</span></span>
+          </div>
+          <div class="form-grid">
+            <div class="form-g">
+              <label class="form-label">Incident Title</label>
+              <input type="text" class="form-input" value="Cryptomining via RCE — prod-api-server-03">
+            </div>
+            <div class="form-g">
+              <label class="form-label">Severity</label>
+              <select class="form-select">
+                <option>P1 — Critical (Active Breach)</option>
+                <option>P2 — High</option>
+                <option>P3 — Medium</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-g">
+            <label class="form-label">Executive Summary (AI-drafted — edit before sending)</label>
+            <textarea class="form-textarea">On 2024-01-15 at 09:23 UTC, GuardDuty detected cryptomining activity on prod-api-server-03 (us-east-1). Investigation confirmed RCE via CVE-2023-44487 (Apache/HTTP2). Instance isolated within 23 minutes. No data exfiltration detected. IAM credentials rotated. Forensic snapshot captured.</textarea>
+          </div>
+          <div class="form-actions">
+            <button class="hbtn">Export PDF</button>
+            <button class="hbtn">Send to Slack</button>
+            <button class="hbtn primary">✓ Close & Archive</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="design-notes">
+      <div class="dn-card">
+        <div class="dn-title">📝 Design Decisions</div>
+        <ul class="dn-list">
+          <li>Auto-generated report removes the most hated post-incident step — engineers edit, not write</li>
+          <li>Playbook audit trail provides compliance evidence (SOC 2, PCI-DSS) at zero extra effort</li>
+          <li>23-min MTTR vs 45-min target shown prominently — positive reinforcement for the team</li>
+        </ul>
+      </div>
+      <div class="dn-card">
+        <div class="dn-title">🔄 Feedback Loop Value</div>
+        <ul class="dn-list">
+          <li>Each closed alert trains the risk scoring model for that alert type</li>
+          <li>Root cause taxonomy builds institutional knowledge over time</li>
+          <li>False positive feedback immediately suppresses that rule variant for 24h</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 04 — WRITE-UP ════ -->
+<section class="section wu-bg" id="writeup">
+  <div class="section-eyebrow">
+    <span class="section-num">04</span>
+    <div class="section-line"></div>
+    <span class="section-cat">Product Write-up</span>
+  </div>
+  <h2 class="section-h2 reveal">Features, Prioritization<br>& Success Metrics</h2>
+
+  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;" class="reveal">
+    Proposed Features — MoSCoW Prioritized
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feat-card">
+      <div class="feat-number">01</div>
+      <span class="feat-priority p1">P1 — Must Have</span>
+      <div class="feat-title">AI-Ranked Alert Queue</div>
+      <p class="feat-body">Replace chronological ordering with a composite risk score: threat intel confidence × asset criticality × blast radius × lateral movement signals. Gives engineers immediate clarity on "what to look at first" without analysis paralysis from undifferentiated "Critical" labels.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-number">02</div>
+      <span class="feat-priority p1">P1 — Must Have</span>
+      <div class="feat-title">Unified Investigation Pane</div>
+      <p class="feat-body">Single-screen evidence aggregation with automatic enrichment from threat intel feeds, CMDB asset data, and cloud audit logs. Eliminates tool-switching. Engineer gets correlated context in under 60 seconds vs. 20–40 minutes of manual pivoting across 6–8 tools.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-number">03</div>
+      <span class="feat-priority p1">P1 — Must Have</span>
+      <div class="feat-title">Codified Playbook Execution</div>
+      <p class="feat-body">One-click execution of automated remediation steps for top-20 alert types (instance isolation, credential rotation, IP blocking) with mandatory human approval gate before destructive actions. Standardizes response quality across all engineers regardless of seniority or shift.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-number">04</div>
+      <span class="feat-priority p2">P2 — Should Have</span>
+      <div class="feat-title">AI-Generated Incident Reports</div>
+      <p class="feat-body">Post-resolution reports auto-drafted from all triage actions taken. Engineer reviews and approves rather than writing from scratch. Eliminates the most dreaded and most-skipped step in the response cycle, ensuring compliance documentation actually gets filed.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-number">05</div>
+      <span class="feat-priority p2">P2 — Should Have</span>
+      <div class="feat-title">Detection Feedback Loop</div>
+      <p class="feat-body">Engineer verdict (true/false positive + root cause) retrains the alert ranking model weekly. System learns team-specific signal/noise patterns over time, measurably reducing false positive rates quarter-over-quarter without configuration overhead.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-number">06</div>
+      <span class="feat-priority p3">P3 — Nice to Have</span>
+      <div class="feat-title">Collaborative Investigation Mode</div>
+      <p class="feat-body">Real-time shared evidence workspace for P1 critical incidents: live commenting, atomic task assignment, structured handoff notes. Prevents duplicate work during major incidents and enables global SOC teams to collaborate across time zones without losing investigation context.</p>
+    </div>
+  </div>
+
+  <!-- Rationale -->
+  <div class="priority-rationale reveal">
+    <div class="pr-block">
+      <div class="pr-block-title">Prioritization Rationale</div>
+      <p>P1 features target the three highest-friction decision moments in every investigation: <em>"What do I look at?"</em> (alert ranking), <em>"What happened?"</em> (investigation pane), and <em>"What do I do?"</em> (playbooks). These unlock the core value proposition and must ship together as an MVP — any one alone produces only marginal improvement.</p>
+      <p>The prioritization framework used was ICE score (Impact × Confidence × Ease), weighted against engineer time-savings per sprint point invested. Features 1–3 all scored in the top quartile on all three dimensions simultaneously.</p>
+    </div>
+    <div class="pr-block">
+      <div class="pr-block-title">What We're Not Building (Yet)</div>
+      <p>P2 features deliver compounding value over time but aren't necessary for initial adoption. The feedback loop requires 30+ days of data before the model improves noticeably. The auto-report needs user validation that AI-drafting meets legal/compliance bar before shipping widely.</p>
+      <p>Intentional MVP exclusions: SIEM query builder, custom detection rules editor, and advanced forensics integrations (memory dumps, disk imaging UI). These extend power-user capability but don't address the core triage workflow gap and would increase time-to-ship by 2+ sprints.</p>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;" class="reveal">Success Metrics</div>
+
+  <div class="metrics-grid reveal">
+    <div class="metric-card">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-label">Mean Time to Respond</div>
+      <div class="metric-target">&lt; 45 min</div>
+      <div class="metric-desc">From alert trigger to resolved status. North-star metric. Baseline: 4.2h. Measured weekly across all resolved P1/P2 alerts.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🎯</div>
+      <div class="metric-label">False Positive Rate</div>
+      <div class="metric-target">&lt; 15%</div>
+      <div class="metric-desc">From ~40% baseline via feedback loop learning. Measured at 30/60/90 days post-launch. Tracked per alert type and detection source.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">📋</div>
+      <div class="metric-label">Playbook Adoption</div>
+      <div class="metric-target">&gt; 80%</div>
+      <div class="metric-desc">% of eligible alerts resolved using an in-app playbook vs. ad-hoc methods. Tracked from day 1. Target achieved by day 60.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">😊</div>
+      <div class="metric-label">Engineer CSAT</div>
+      <div class="metric-target">&gt; 4.2/5</div>
+      <div class="metric-desc">Quarterly NPS-style satisfaction from security engineers. Leading indicator for burnout reduction and sustainable adoption over 12 months.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 05 — DEV ACTION ITEMS ════ -->
+<section class="section dev-bg" id="devitems">
+  <div class="section-eyebrow">
+    <span class="section-num">05</span>
+    <div class="section-line"></div>
+    <span class="section-cat">Bonus — Development Action Items</span>
+  </div>
+  <h2 class="section-h2 reveal">Engineering<br>Conversation Starters</h2>
+
+  <div style="overflow-x:auto;" class="reveal">
+    <table class="dev-table">
+      <thead>
+        <tr>
+          <th style="width:120px">Area</th>
+          <th>Action Item</th>
+          <th style="width:110px">Effort</th>
+          <th style="width:90px">Sprint</th>
+          <th>Discussion Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="dev-area">Alert Ingestion</span></td>
+          <td><div class="dev-desc">Design a unified alert schema that normalizes events from GuardDuty, Azure Defender, GCP SCC, and Security Hub into a canonical data model with versioning support</div></td>
+          <td>
+            <span class="effort-tag h">High</span>
+            <div class="effort-dots">
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s1">Sprint 1</span></td>
+          <td>
+            <div class="dev-discussion">How do we handle schema drift when cloud vendors update alert formats? Do we version the ingestion schema or implement an adapter layer per source? What's our SLA for new source onboarding?</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">Risk Scoring</span></td>
+          <td><div class="dev-desc">Implement ML-based composite risk scoring. Define feature inputs: asset criticality from CMDB (40%), threat intel confidence score (35%), lateral movement signals (25%). Start with rules-based heuristic, migrate to model.</div></td>
+          <td>
+            <span class="effort-tag h">High</span>
+            <div class="effort-dots">
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s1">Sprint 1–2</span></td>
+          <td>
+            <div class="dev-discussion">Can we start with a deterministic heuristic and ship v1 faster? What's the minimum training dataset size for the ML model to outperform the heuristic? How do we explain score components to engineers who are skeptical of black-box AI?</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">Threat Intel</span></td>
+          <td><div class="dev-desc">Build threat intel aggregation pipeline: integrate VirusTotal, Shodan, MISP, and internal reputation DB with async enrichment, caching layer (Redis), and freshness TTL management per IOC type</div></td>
+          <td>
+            <span class="effort-tag m">Medium</span>
+            <div class="effort-dots">
+              <div class="e-dot filled m"></div>
+              <div class="e-dot filled m"></div>
+              <div class="e-dot"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s1">Sprint 2</span></td>
+          <td>
+            <div class="dev-discussion">Do we enrich at ingestion time or lazily at view time? Cache TTL strategy per IOC type (IPs decay faster than domains). Rate limit management across multiple paid API providers. Cost model for enrichment at scale (600 alerts/day × avg 5 IOCs).</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">Playbooks</span></td>
+          <td><div class="dev-desc">Build playbook execution engine: define YAML-based playbook DSL, implement approval-gated automated actions, integrate with AWS CLI/SDK, Azure REST API, and GCP SDK for cloud-native remediation actions</div></td>
+          <td>
+            <span class="effort-tag h">High</span>
+            <div class="effort-dots">
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+              <div class="e-dot filled h"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s2">Sprint 2–3</span></td>
+          <td>
+            <div class="dev-discussion">How do we handle partial execution failures mid-playbook — rollback, skip, or halt? What's the IAM permission model for automated cross-account actions? Full audit log per automated action for SOC 2 compliance? Sandboxed testing environment for playbook authors?</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">AI Report Gen</span></td>
+          <td><div class="dev-desc">Fine-tune LLM prompt for incident report generation using historical closed alerts as few-shot examples. Define report template schema, approval workflow, and PII scrubbing pipeline before sending to external LLM APIs</div></td>
+          <td>
+            <span class="effort-tag m">Medium</span>
+            <div class="effort-dots">
+              <div class="e-dot filled m"></div>
+              <div class="e-dot filled m"></div>
+              <div class="e-dot"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s2">Sprint 3</span></td>
+          <td>
+            <div class="dev-discussion">Internal vs. external LLM provider — data residency requirements for security incident data? PII/credential scrubbing before sending logs to LLM. Legal/compliance review gate before shipping auto-report feature. Token cost model at scale.</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">Feedback Loop</span></td>
+          <td><div class="dev-desc">Implement feedback collection API and model retraining pipeline. Capture true/false positive verdicts + root cause per alert fingerprint. Retrain risk ranking model weekly on new labeled data with A/B testing framework</div></td>
+          <td>
+            <span class="effort-tag m">Medium</span>
+            <div class="effort-dots">
+              <div class="e-dot filled m"></div>
+              <div class="e-dot filled m"></div>
+              <div class="e-dot"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s3">Sprint 3–4</span></td>
+          <td>
+            <div class="dev-discussion">Minimum labeled examples required per alert type before retraining produces meaningful improvement? How do we surface model drift alerts to eng team? A/B testing infra to compare model versions without exposing engineers to degraded ranking. Handling class imbalance (few true positives relative to FPs).</div>
+          </td>
+        </tr>
+        <tr>
+          <td><span class="dev-area">Performance SLOs</span></td>
+          <td><div class="dev-desc">Define and instrument SLOs: alert queue load &lt;1s P95, threat intel enrichment &lt;5s P95, playbook action execution &lt;10s P95. Implement distributed tracing (OpenTelemetry), alerting, and error budget dashboards</div></td>
+          <td>
+            <span class="effort-tag m">Medium</span>
+            <div class="effort-dots">
+              <div class="e-dot filled m"></div>
+              <div class="e-dot filled m"></div>
+              <div class="e-dot"></div>
+            </div>
+          </td>
+          <td><span class="sprint-tag s1">Sprint 1</span></td>
+          <td>
+            <div class="dev-discussion">Differentiated SLOs for critical vs. low severity alert paths (critical alerts should get tighter latency budgets)? Error budget policy — what triggers a reliability sprint? Who owns on-call for the triage platform itself vs. the security alerts it processes?</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════ FOOTER ════ -->
+<footer class="footer">
+  <div>
+    <div class="footer-brand">SecOps — Alert Triage</div>
+    <div class="footer-sub">PM Case Study · Cloud Security Operations · 2024</div>
+  </div>
+  <div class="footer-right">
+    <button class="dl-btn" onclick="openDownload()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download All Deliverables
+    </button>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-top:8px;">5 files available</div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+/* ─── Screen switching ─── */
+function switchScreen(num, clickedTab) {
+  document.querySelectorAll('.wf-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.wf-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('wfp-' + num).classList.add('active');
+  clickedTab.classList.add('active');
+}
+
+/* ─── Evidence tabs ─── */
+document.querySelectorAll('.ev-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    this.closest('.ev-tabs').querySelectorAll('.ev-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+/* ─── Sev pill filter ─── */
+document.querySelectorAll('.sev-pill').forEach(pill => {
+  pill.addEventListener('click', function() {
+    document.querySelectorAll('.sev-pill').forEach(p => p.style.opacity = '0.45');
+    this.style.opacity = '1';
+  });
+});
+
+/* ─── Feedback buttons ─── */
+document.querySelectorAll('.fb-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.closest('.fb-btns').querySelectorAll('.fb-btn').forEach(b => b.classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+
+/* ─── Scroll reveal ─── */
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+/* ─── Download modal ─── */
+function openDownload() {
+  document.getElementById('dlModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDownload() {
+  document.getElementById('dlModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleOverlayClick(e) {
+  if (e.target === e.currentTarget) closeDownload();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDownload();
+});
+
+/* ─── Download: Full HTML ─── */
+function downloadHTML() {
+  const html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'alert-triage-pm-submission.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  closeDownload();
+}
+
+/* ─── Download: Problem Statement ─── */
+function downloadProblemStatement() {
+  const md = `# Alert Triage Workflow — Problem Statement & User Persona
+*PM Case Study | Cloud Security Operations*
+
+---
+
+## Problem Statement
+
+### The Problem
+Cloud security teams are drowning in alert fatigue. Receiving hundreds to thousands of security signals daily across fragmented multi-cloud environments (AWS GuardDuty, Azure Defender, GCP Security Command Center, Splunk), engineers must manually pivot between 6–8 disconnected tools to piece together context, assess severity, and decide on remediation.
+
+This fragmented, high-friction workflow produces three cascading failures:
+- **Slower MTTR**: Manual tool-switching adds 20–40 minutes per alert investigation
+- **Missed threats**: 73% of alerts go uninvestigated due to volume overload
+- **Engineer burnout**: Chronic high-cognitive-load work without resolution satisfaction
+
+**Current baseline MTTR: 4.2 hours | Target MTTR: < 45 minutes**
+
+### The Opportunity
+A unified, intelligent alert triage interface that collapses the entire investigation lifecycle — discovery → context enrichment → evidence analysis → remediation → reporting — into a single workflow engineers can trust.
+
+The UX must mirror how a great security engineer thinks during a live incident:
+> "What is this? How bad? What do I do?" — not "which tab was that log in?"
+
+By eliminating tool-switching overhead and automating enrichment, we can cut MTTR by 60%+ and transform reactive firefighting into confident, systematic investigation.
+
+### Key Statistics
+| Metric | Current | Target |
+|--------|---------|--------|
+| Mean Time to Respond | 4.2 hours | < 45 minutes |
+| Alerts uninvestigated | 73% | < 20% |
+| False positive rate | ~40% | < 15% |
+| Tools used per investigation | 6–8 | 1 |
+
+---
+
+## User Persona
+
+### Alex Chen — Cloud Security Engineer L4
+**Company:** FinTech Corp — Security Operations Center
+**Experience:** 5 years in cloud security operations
+
+#### Profile Stats
+- **Team size:** 8 engineers
+- **Daily alert volume:** 600–800 alerts
+- **Tools used daily:** 6–8 (GuardDuty, Azure Defender, GCP SCC, Splunk, Confluence, Jira, PagerDuty, Slack)
+- **On-call frequency:** Every 3 weeks
+- **Environment:** PCI-DSS regulated, multi-cloud
+
+#### Technical Skills
+AWS · GCP · Azure · Splunk · SIEM · Python · Incident Response · Threat Intel
+
+#### Background & Context
+- Manages security alerts across AWS GuardDuty, Azure Defender, GCP Security Command Center
+- Primary on-call responder for production security incidents in a PCI-DSS regulated environment
+- Deeply technical: writes detection rules, threat hunts, and incident runbooks in Confluence
+- Works closely with Cloud Infrastructure and DevOps teams for remediation execution
+
+#### Goals & Motivations
+✓ Resolve critical alerts fast and confidently — with full context, not gut feel
+✓ Reduce repetitive enrichment work through automation so focus stays on analysis
+✓ Close false positives quickly with a documented audit trail for compliance
+✓ Build and share runbooks so team knowledge isn't siloed in one person's head
+
+#### Pain Points
+✕ Manually pivoting between 6–8 tools to gather alert context: each alert costs 20–40 minutes
+✕ No standardized playbooks — response quality depends on who's on-call that night
+✕ Severity labels are unreliable; ~40% of "critical" alerts are false positives
+✕ Post-incident reports are manual, time-consuming, and often skipped under pressure
+
+#### Behaviors & Preferences
+→ Checks alert queue first thing each morning and after every lunch break
+→ Prefers dense information displays and keyboard shortcuts over click-heavy UIs
+→ Heavy Slack/PagerDuty user for team escalation and shift handoffs
+→ Deeply skeptical of AI recommendations without explainable reasoning behind them
+`;
+
+  downloadMD(md, 'problem-statement-persona.md');
+}
+
+/* ─── Download: Write-up ─── */
+function downloadWriteup() {
+  const md = `# Alert Triage Workflow — Product Write-up
+*Features, Prioritization & Success Metrics | Max 1 Page*
+
+---
+
+## Proposed Features (MoSCoW Prioritized)
+
+### P1 — Must Have
+
+**1. AI-Ranked Alert Queue**
+Replace chronological ordering with a composite risk score: threat intel confidence × asset criticality × blast radius × lateral movement signals. Gives engineers immediate clarity on "what to look at first" without analysis paralysis from undifferentiated "Critical" labels.
+
+**2. Unified Investigation Pane**
+Single-screen evidence aggregation with automatic enrichment from threat intel feeds, CMDB asset data, and cloud audit logs. Eliminates tool-switching. Engineer gets correlated context in under 60 seconds vs. 20–40 minutes of manual pivoting across 6–8 tools.
+
+**3. Codified Playbook Execution**
+One-click execution of automated remediation steps for top-20 alert types (instance isolation, credential rotation, IP blocking) with mandatory human approval gate before destructive actions. Standardizes response quality across all engineers regardless of seniority or shift.
+
+### P2 — Should Have
+
+**4. AI-Generated Incident Reports**
+Post-resolution reports auto-drafted from all triage actions taken. Engineer reviews and approves rather than writing from scratch. Eliminates the most dreaded post-incident step, ensuring compliance documentation gets filed.
+
+**5. Detection Feedback Loop**
+Engineer verdict (true/false positive + root cause) retrains the alert ranking model weekly. System learns team-specific signal/noise patterns over time, measurably reducing false positive rates quarter-over-quarter.
+
+### P3 — Nice to Have
+
+**6. Collaborative Investigation Mode**
+Real-time shared evidence workspace for P1 critical incidents: live commenting, atomic task assignment, structured handoff notes. Prevents duplicate work during major incidents.
+
+---
+
+## Prioritization Rationale
+
+P1 features target the three highest-friction decision moments in every investigation:
+- *"What do I look at?"* → AI Alert Ranking
+- *"What happened?"* → Unified Investigation Pane
+- *"What do I do?"* → Playbook Execution
+
+These must ship together as an MVP — any one alone produces only marginal improvement. Prioritization used ICE framework (Impact × Confidence × Ease) weighted against engineer time-savings per sprint point.
+
+**Intentional MVP exclusions:** SIEM query builder, custom detection rules editor, advanced forensics integrations. These extend power-user capability but don't address the core triage workflow gap and would increase time-to-ship by 2+ sprints.
+
+---
+
+## Success Metrics
+
+| Metric | Target | Baseline | Timeline |
+|--------|--------|----------|----------|
+| Mean Time to Respond (MTTR) | < 45 min | 4.2 hours | Measured weekly from day 1 |
+| False Positive Rate | < 15% | ~40% | Measured at 30/60/90 days |
+| Playbook Adoption | > 80% | ~0% | Target by day 60 |
+| Engineer CSAT | > 4.2/5 | N/A | Quarterly survey |
+`;
+
+  downloadMD(md, 'product-writeup.md');
+}
+
+/* ─── Download: Dev Items ─── */
+function downloadDevItems() {
+  const md = `# Alert Triage Workflow — Development Action Items
+*Engineering Backlog for Team Discussion*
+
+---
+
+## Sprint 1 — Foundation
+
+### 1. Unified Alert Ingestion Schema
+**Area:** Data Engineering / Backend
+**Effort:** High (3 sprint points)
+**Action:** Design a unified alert schema that normalizes events from GuardDuty, Azure Defender, GCP SCC, and Security Hub into a canonical data model with versioning support.
+
+**Discussion Points:**
+- How do we handle schema drift when cloud vendors update alert formats?
+- Do we implement an adapter layer per source or a central transformation pipeline?
+- What's our SLA for onboarding a new alert source?
+
+---
+
+### 2. Risk Scoring Engine (v1 Heuristic)
+**Area:** ML Engineering / Backend
+**Effort:** High (3 sprint points)
+**Action:** Implement composite risk scoring. Define feature inputs: asset criticality from CMDB (40%), threat intel confidence score (35%), lateral movement signals (25%). Ship rules-based heuristic in Sprint 1, migrate to ML model in Sprint 2.
+
+**Discussion Points:**
+- Minimum training dataset size for ML model to outperform heuristic?
+- How do we explain score components to engineers skeptical of black-box AI?
+- CMDB integration approach — polling or event-driven updates?
+
+---
+
+### 3. Performance SLOs & Observability
+**Area:** Platform Engineering
+**Effort:** Medium (2 sprint points)
+**Action:** Define and instrument SLOs: alert queue load < 1s P95, threat intel enrichment < 5s P95, playbook action execution < 10s P95. Implement OpenTelemetry distributed tracing and error budget dashboards.
+
+**Discussion Points:**
+- Differentiated SLOs for critical vs. low severity alert paths?
+- Error budget policy — what triggers a reliability sprint?
+- Who owns on-call for the triage platform vs. the security alerts it processes?
+
+---
+
+## Sprint 2 — Core Features
+
+### 4. Threat Intel Enrichment Pipeline
+**Area:** Backend / Integrations
+**Effort:** Medium (2 sprint points)
+**Action:** Build threat intel aggregation: integrate VirusTotal, Shodan, MISP, internal reputation DB with async enrichment, Redis caching layer, and TTL management per IOC type.
+
+**Discussion Points:**
+- Enrich at ingestion time (higher cost, lower latency) or lazily at view time?
+- Cache TTL strategy per IOC type (IPs decay faster than domains).
+- Rate limit management across multiple paid API providers.
+- Cost model at scale: 600 alerts/day × avg 5 IOCs = 3,000 enrichment calls/day.
+
+---
+
+### 5. Playbook Execution Engine
+**Area:** Backend / Integrations
+**Effort:** High (3 sprint points)
+**Action:** Build playbook DSL (YAML-based), implement approval-gated automated actions, integrate with AWS CLI/SDK, Azure REST API, GCP SDK for cloud-native remediation.
+
+**Discussion Points:**
+- How do we handle partial execution failures mid-playbook — rollback, skip, or halt?
+- IAM permission model for automated cross-account actions?
+- Full audit log per automated action for SOC 2 / PCI-DSS compliance?
+- Sandboxed testing environment for playbook authors?
+
+---
+
+## Sprint 3 — Intelligence Layer
+
+### 6. AI Incident Report Generation
+**Area:** AI/ML / Backend
+**Effort:** Medium (2 sprint points)
+**Action:** Fine-tune LLM prompt for incident report generation using historical closed alerts as few-shot examples. Define report template schema, approval workflow, and PII scrubbing pipeline.
+
+**Discussion Points:**
+- Internal vs. external LLM provider — data residency requirements?
+- PII/credential scrubbing before sending incident data to external APIs.
+- Legal/compliance review gate before shipping auto-report feature.
+- Token cost model at scale.
+
+---
+
+## Sprint 3–4 — Continuous Improvement
+
+### 7. Detection Feedback Loop & Model Retraining
+**Area:** ML Engineering
+**Effort:** Medium (2 sprint points)
+**Action:** Feedback collection API, labeled dataset storage, weekly model retraining pipeline with A/B testing framework for comparing model versions.
+
+**Discussion Points:**
+- Minimum labeled examples per alert type before retraining improves meaningfully?
+- How do we surface model drift to the engineering team?
+- Handling class imbalance (few true positives relative to false positives)?
+- A/B testing infra to avoid exposing engineers to degraded ranking during experiments.
+
+---
+
+## Summary Table
+
+| # | Feature | Sprint | Effort | Owner |
+|---|---------|--------|--------|-------|
+| 1 | Unified Alert Schema | S1 | High | Data Eng |
+| 2 | Risk Scoring Engine | S1–2 | High | ML Eng |
+| 3 | SLOs & Observability | S1 | Medium | Platform |
+| 4 | Threat Intel Pipeline | S2 | Medium | Backend |
+| 5 | Playbook Execution | S2–3 | High | Backend |
+| 6 | AI Report Generation | S3 | Medium | AI/ML |
+| 7 | Feedback Loop | S3–4 | Medium | ML Eng |
+`;
+
+  downloadMD(md, 'development-action-items.md');
+}
+
+function downloadMD(content, filename) {
+  const blob = new Blob([content], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  closeDownload();
+}
+
+function printAll() {
+  closeDownload();
+  setTimeout(() => window.print(), 300);
+}
+</script>
+</body>
+</html>

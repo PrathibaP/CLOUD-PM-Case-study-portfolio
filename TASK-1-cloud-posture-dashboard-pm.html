@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cloud Posture Dashboard — PM Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080d14;
+    --surface: #0d1520;
+    --surface2: #111d2e;
+    --border: #1a2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6b;
+    --muted: #3a5068;
+    --text: #d4e8f5;
+    --text-dim: #6b8fa8;
+    --danger: #ff4757;
+    --warn: #ffa502;
+    --ok: #2ed573;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ─── GRID BACKGROUND ─────────────────────────────── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HERO HEADER ─────────────────────────────────── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 60px 48px 48px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 58px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title span {
+    color: var(--accent);
+    position: relative;
+  }
+
+  .hero-title span::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  .hero-meta {
+    text-align: right;
+  }
+
+  .hero-meta p {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.8;
+  }
+
+  .hero-meta strong {
+    color: var(--accent);
+  }
+
+  /* ─── NAV ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,13,20,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0 48px;
+  }
+
+  .nav::-webkit-scrollbar { height: 0; }
+
+  .nav-btn {
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .nav-btn:hover { color: var(--text); }
+
+  .nav-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .nav-num {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-right: 6px;
+  }
+
+  /* ─── DOWNLOAD BAR ─────────────────────────────────── */
+  .dl-bar {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(90deg, rgba(0,212,255,0.06), rgba(0,212,255,0.02));
+    border-bottom: 1px solid rgba(0,212,255,0.15);
+    padding: 12px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .dl-bar p {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .dl-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .dl-btn:hover {
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,212,255,0.3);
+  }
+
+  /* ─── MAIN CONTENT ─────────────────────────────────── */
+  .content {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 48px;
+  }
+
+  /* ─── SECTION ─────────────────────────────────────── */
+  .section {
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 40px;
+    line-height: 1.1;
+  }
+
+  /* ─── CARDS ────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--muted); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .hero, .content, .nav, .dl-bar { padding-left: 20px; padding-right: 20px; }
+  }
+
+  p { color: var(--text-dim); line-height: 1.75; font-size: 14px; }
+  p + p { margin-top: 12px; }
+
+  /* ─── PROBLEM STATEMENT ─────────────────────────────── */
+  .problem-box {
+    border-left: 3px solid var(--accent2);
+    padding: 24px 28px;
+    background: rgba(255,107,53,0.04);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 32px;
+  }
+
+  .problem-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--accent2);
+  }
+
+  /* ─── PERSONA ─────────────────────────────────────── */
+  .persona-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 20px;
+  }
+
+  .persona-avatar {
+    width: 80px; height: 80px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    border: 2px solid var(--border);
+  }
+
+  .persona-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .persona-role {
+    font-size: 12px;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 16px;
+  }
+
+  .persona-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .tag {
+    padding: 4px 12px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    border: 1px solid;
+  }
+
+  .tag-blue { border-color: rgba(0,212,255,0.3); color: var(--accent); background: rgba(0,212,255,0.06); }
+  .tag-orange { border-color: rgba(255,107,53,0.3); color: var(--accent2); background: rgba(255,107,53,0.06); }
+  .tag-green { border-color: rgba(46,213,115,0.3); color: var(--ok); background: rgba(46,213,115,0.06); }
+  .tag-red { border-color: rgba(255,71,87,0.3); color: var(--danger); background: rgba(255,71,87,0.06); }
+
+  .pain-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .pain-item:last-child { border-bottom: none; }
+
+  .pain-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+  /* ─── WIREFRAMES ──────────────────────────────────── */
+  .wireframe-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    width: fit-content;
+  }
+
+  .wf-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid var(--border);
+    letter-spacing: 0.06em;
+  }
+
+  .wf-tab:last-child { border-right: none; }
+  .wf-tab.active { background: var(--accent); color: #000; font-weight: 500; }
+  .wf-tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  .wireframe-screen { display: none; }
+  .wireframe-screen.active { display: block; }
+
+  .wf-annotation {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .wf-annotation h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 8px;
+  }
+
+  .wf-annotation ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .wf-annotation li {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .wf-annotation li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent2);
+    font-size: 11px;
+  }
+
+  /* ─── MOCK DASHBOARD SCREEN 1 ──────────────────────── */
+  .mock-window {
+    background: #0a1118;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+
+  .mock-titlebar {
+    background: var(--surface2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-titlebar-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 8px;
+  }
+
+  .mock-layout { display: flex; height: 560px; }
+
+  .mock-sidebar {
+    width: 200px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mock-sidebar-logo {
+    padding: 0 16px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .mock-nav-item {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    margin: 0 8px;
+    transition: all 0.15s;
+  }
+
+  .mock-nav-item:hover { background: var(--surface2); color: var(--text); }
+  .mock-nav-item.active { background: rgba(0,212,255,0.1); color: var(--accent); }
+
+  .mock-main { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  .mock-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mock-search {
+    flex: 1;
+    max-width: 320px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mock-filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mock-filter-chip {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: all 0.15s;
+  }
+
+  .mock-filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .mock-filter-chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  .mock-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  .mock-stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+
+  .mock-stat-label { font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .mock-stat-num { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; }
+  .mock-stat-sub { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+
+  .mock-table { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+
+  .mock-table-header {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr 0.8fr;
+    padding: 10px 14px;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .mock-table-row {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr 0.8fr;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    border-bottom: 1px solid rgba(26,45,69,0.5);
+    align-items: center;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  .mock-table-row:hover { background: rgba(0,212,255,0.04); }
+  .mock-table-row:last-child { border-bottom: none; }
+
+  .sev-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .sev-critical { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid rgba(255,71,87,0.3); }
+  .sev-high { background: rgba(255,165,2,0.15); color: var(--warn); border: 1px solid rgba(255,165,2,0.3); }
+  .sev-medium { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
+  .sev-low { background: rgba(46,213,115,0.1); color: var(--ok); border: 1px solid rgba(46,213,115,0.2); }
+
+  /* ─── SCREEN 2: DETAIL VIEW ───────────────────────── */
+  .mock-detail-panel { display: flex; height: 560px; }
+  .mock-detail-main { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .mock-detail-side { width: 260px; border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; background: var(--surface); }
+
+  .detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .detail-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+
+  .mock-breadcrumb {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  .detail-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .detail-meta-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .detail-meta-key {
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .detail-meta-val {
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+  }
+
+  .remediation-steps {
+    background: rgba(46,213,115,0.05);
+    border: 1px solid rgba(46,213,115,0.2);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .remediation-steps h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ok);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 10px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(46,213,115,0.1);
+    line-height: 1.5;
+  }
+
+  .step-num {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(46,213,115,0.15);
+    border: 1px solid rgba(46,213,115,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: var(--ok);
+    flex-shrink: 0;
+  }
+
+  /* ─── SCREEN 3: RISK SUMMARY ─────────────────────── */
+  .mock-risk-main { padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+
+  .risk-gauge-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  .risk-gauge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .gauge-label { font-size: 9px; font-family: 'IBM Plex Mono', monospace; color: var(--text-dim); letter-spacing: 0.1em; margin-bottom: 12px; text-transform: uppercase; }
+
+  .gauge-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    position: relative;
+  }
+
+  .gauge-num { font-family: 'Syne', sans-serif; font-size: 10px; color: var(--text-dim); margin-top: -2px; }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+
+  .bar-label { width: 100px; color: var(--text-dim); font-size: 9px; text-align: right; flex-shrink: 0; }
+
+  .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+  .bar-val { width: 28px; text-align: right; color: var(--text); font-size: 10px; }
+
+  /* ─── FEATURES SECTION ────────────────────────────── */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--muted);
+    transform: translateY(-2px);
+  }
+
+  .feature-card::before {
+    content: attr(data-priority);
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .feature-card[data-priority="P0"]::before { color: var(--danger); border-color: rgba(255,71,87,0.3); background: rgba(255,71,87,0.08); }
+  .feature-card[data-priority="P1"]::before { color: var(--warn); border-color: rgba(255,165,2,0.3); background: rgba(255,165,2,0.08); }
+  .feature-card[data-priority="P2"]::before { color: var(--ok); border-color: rgba(46,213,115,0.3); background: rgba(46,213,115,0.08); }
+  .feature-card[data-priority="P3"]::before { color: var(--accent); border-color: rgba(0,212,255,0.2); background: rgba(0,212,255,0.05); }
+
+  .feature-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-right: 60px;
+  }
+
+  .feature-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .feature-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+
+  /* ─── PRIORITIZATION MATRIX ──────────────────────── */
+  .matrix-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    position: relative;
+    margin-bottom: 32px;
+  }
+
+  .matrix-grid {
+    position: relative;
+    width: 100%;
+    height: 340px;
+    border-left: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+  }
+
+  .matrix-label-x {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  .matrix-label-y {
+    position: absolute;
+    top: 50%;
+    left: -60px;
+    transform: translateY(-50%) rotate(-90deg);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .matrix-quadrant {
+    position: absolute;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .matrix-dot {
+    position: absolute;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: 2px solid;
+    text-align: center;
+    line-height: 1.2;
+    transform: translate(-50%, 50%);
+  }
+
+  .matrix-dot:hover { transform: translate(-50%, 50%) scale(1.2); z-index: 10; }
+
+  /* ─── METRICS ─────────────────────────────────────── */
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .metric-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+
+  .metric-icon { font-size: 28px; margin-bottom: 12px; }
+  .metric-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .metric-target {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .metric-desc { font-size: 12px; color: var(--text-dim); }
+
+  /* ─── DEV ACTIONS ─────────────────────────────────── */
+  .dev-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .dev-table thead tr {
+    border-bottom: 2px solid var(--border);
+  }
+
+  .dev-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .dev-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  .dev-table tbody tr:hover td { background: rgba(0,212,255,0.02); }
+  .dev-table tbody tr:last-child td { border-bottom: none; }
+
+  .sprint-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-family: 'IBM Plex Mono', monospace;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .effort-bar {
+    display: flex;
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .effort-pip {
+    width: 12px; height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+  }
+
+  .effort-pip.filled { background: var(--accent); }
+
+  /* ─── FOOTER ──────────────────────────────────────── */
+  .footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+    gap: 16px;
+  }
+
+  .footer p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ─── PROGRESS TIMELINE ──────────────────────────── */
+  .timeline { position: relative; padding-left: 32px; }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -28px;
+    top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+  }
+
+  .timeline-period {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .timeline-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .tooltip {
+    display: none;
+    position: absolute;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .matrix-dot:hover .tooltip { display: block; }
+
+  /* ─── SCROLLBAR ──────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- HERO -->
+<header class="hero">
+  <div>
+    <div class="hero-badge">☁ PRODUCT BRIEF · SECURITY PLATFORM</div>
+    <h1 class="hero-title">Cloud Posture<br/><span>Dashboard</span></h1>
+    <p style="margin-top:14px;font-size:14px;color:var(--text-dim);max-width:480px;">A unified misconfiguration management layer across multi-cloud environments — designed for speed, clarity, and actionable remediation.</p>
+  </div>
+  <div class="hero-meta">
+    <p><strong>Document Type</strong><br/>PM Product Brief</p>
+    <p style="margin-top:12px;"><strong>Scope</strong><br/>Cloud Posture Dashboard v1.0</p>
+    <p style="margin-top:12px;"><strong>Date</strong><br/>March 2026</p>
+    <p style="margin-top:12px;"><strong>Status</strong><br/><span style="color:var(--ok)">● READY FOR REVIEW</span></p>
+  </div>
+</header>
+
+<!-- DOWNLOAD BAR -->
+<div class="dl-bar">
+  <p>↓ Export this document for offline reference or team sharing</p>
+  <button class="dl-btn" onclick="downloadFile()">⬇ Download Full Brief (.html)</button>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <button class="nav-btn active" onclick="showSection('problem', this)"><span class="nav-num">01</span>PROBLEM & PERSONA</button>
+  <button class="nav-btn" onclick="showSection('wireframes', this)"><span class="nav-num">02</span>WIREFRAMES</button>
+  <button class="nav-btn" onclick="showSection('features', this)"><span class="nav-num">03</span>FEATURES & PRIORITY</button>
+  <button class="nav-btn" onclick="showSection('metrics', this)"><span class="nav-num">04</span>SUCCESS METRICS</button>
+  <button class="nav-btn" onclick="showSection('devactions', this)"><span class="nav-num">05</span>DEV ACTION ITEMS</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 1: PROBLEM & PERSONA -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="content">
+  <div class="section active" id="section-problem">
+
+    <div class="section-label">01 / Problem & Persona</div>
+    <h2 class="section-title">Understanding the Why</h2>
+
+    <div class="problem-box">
+      <h3>⚠ Problem Statement</h3>
+      <p>Organizations operating across multiple cloud providers (AWS, GCP, Azure) face an explosion of security misconfigurations — exposed S3 buckets, overly permissive IAM roles, unencrypted databases, open security groups. Today, security and DevSecOps teams must juggle fragmented native consoles, export CSVs manually, and lack a single pane of glass to triage, filter, and act on these findings at speed.</p>
+      <p style="margin-top:12px;">The result: critical risks go unresolved for days (sometimes weeks), audit reports are unreliable, and engineering time is wasted on context-switching rather than remediating the actual vulnerabilities.</p>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:32px;">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-icon" style="background:rgba(255,71,87,0.1)">⚡</div>
+          Core Pain
+        </div>
+        <p>No unified view of misconfigurations across cloud accounts. Teams spend 60–70% of their time aggregating data instead of fixing it.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-icon" style="background:rgba(0,212,255,0.1)">🎯</div>
+          Our Answer
+        </div>
+        <p>A centralized Cloud Posture Dashboard that normalizes findings, enables multi-dimensional filtering, and surfaces clear remediation paths — all without leaving a single UI.</p>
+      </div>
+    </div>
+
+    <div class="section-label">User Personas</div>
+
+    <!-- Persona 1 -->
+    <div class="persona-card" style="margin-bottom:20px;">
+      <div class="persona-avatar" style="background:rgba(255,71,87,0.08);border-color:rgba(255,71,87,0.3);">🛡️</div>
+      <div>
+        <div class="persona-name">Priya Menon</div>
+        <div class="persona-role">// CLOUD SECURITY ENGINEER · PRIMARY USER</div>
+        <p>Priya manages cloud posture for a fintech company running workloads across AWS (prod) and GCP (analytics). She receives 500+ findings weekly from their CSPM tool but has no efficient way to triage what actually matters. She lives in dashboards, loves keyboard shortcuts, and needs signal — not noise.</p>
+        <div class="persona-tags">
+          <span class="tag tag-red">🔴 500+ weekly alerts</span>
+          <span class="tag tag-blue">Multi-cloud (AWS + GCP)</span>
+          <span class="tag tag-orange">Compliance pressure (SOC 2)</span>
+          <span class="tag tag-green">Wants quick remediation</span>
+        </div>
+        <div style="margin-top:18px;">
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:10px;">JOBS TO BE DONE</p>
+          <div class="pain-item"><span class="pain-icon">😤</span><span>Quickly identify which misconfigs are actual risks vs. informational noise</span></div>
+          <div class="pain-item"><span class="pain-icon">🔍</span><span>Filter findings by severity, account, region, and resource type simultaneously</span></div>
+          <div class="pain-item"><span class="pain-icon">⚡</span><span>Get a clear fix — CLI command, Terraform snippet, or link to console — without research</span></div>
+          <div class="pain-item"><span class="pain-icon">📊</span><span>Show week-over-week posture improvement to leadership</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Persona 2 -->
+    <div class="persona-card" style="margin-bottom:20px;">
+      <div class="persona-avatar" style="background:rgba(0,212,255,0.08);border-color:rgba(0,212,255,0.3);">📋</div>
+      <div>
+        <div class="persona-name">Marcus Webb</div>
+        <div class="persona-role">// VP OF ENGINEERING · EXECUTIVE STAKEHOLDER</div>
+        <p>Marcus doesn't log into security tools daily — but he needs a weekly posture score for board-level reporting. He wants to know: "Are we getting better or worse?" and "Do we have any critical open issues?" He needs a clean summary, not a data table.</p>
+        <div class="persona-tags">
+          <span class="tag tag-blue">Board reporting</span>
+          <span class="tag tag-orange">Risk appetite decisions</span>
+          <span class="tag tag-green">Trend over time</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Persona 3 -->
+    <div class="persona-card">
+      <div class="persona-avatar" style="background:rgba(127,255,107,0.08);border-color:rgba(127,255,107,0.3);">⚙️</div>
+      <div>
+        <div class="persona-name">Aditya Sharma</div>
+        <div class="persona-role">// DEVOPS / PLATFORM ENGINEER · SECONDARY USER</div>
+        <p>Aditya is the person who fixes things. He gets assigned specific misconfigs and needs clear, copy-paste remediation steps. He cares about which resource is broken, what the exact fix is, and how to verify it's done — ideally integrated with Jira or Slack.</p>
+        <div class="persona-tags">
+          <span class="tag tag-green">Wants CLI snippets</span>
+          <span class="tag tag-blue">Jira / Slack integration</span>
+          <span class="tag tag-orange">Ticket-driven workflow</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SECTION 2: WIREFRAMES -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section" id="section-wireframes">
+
+    <div class="section-label">02 / Wireframes</div>
+    <h2 class="section-title">3-Screen Flow</h2>
+
+    <div class="wireframe-tabs">
+      <button class="wf-tab active" onclick="showWireframe('wf1', this)">Screen 1: Dashboard</button>
+      <button class="wf-tab" onclick="showWireframe('wf2', this)">Screen 2: Finding Detail</button>
+      <button class="wf-tab" onclick="showWireframe('wf3', this)">Screen 3: Risk Summary</button>
+    </div>
+
+    <!-- ── WF SCREEN 1 ── -->
+    <div class="wireframe-screen active" id="wf-wf1">
+      <div class="mock-window">
+        <div class="mock-titlebar">
+          <div class="mock-dot" style="background:#ff5f56"></div>
+          <div class="mock-dot" style="background:#ffbd2e"></div>
+          <div class="mock-dot" style="background:#27c93f"></div>
+          <span class="mock-titlebar-title">CloudPosture — Main Dashboard</span>
+        </div>
+        <div class="mock-layout">
+          <!-- Sidebar -->
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-logo">☁ CloudPosture</div>
+            <div class="mock-nav-item active">📊 Dashboard</div>
+            <div class="mock-nav-item">🔍 Findings</div>
+            <div class="mock-nav-item">🏛️ Accounts</div>
+            <div class="mock-nav-item">📋 Compliance</div>
+            <div class="mock-nav-item">📈 Reports</div>
+            <div class="mock-nav-item" style="margin-top:auto">⚙️ Settings</div>
+          </div>
+          <!-- Main -->
+          <div class="mock-main">
+            <!-- Top bar -->
+            <div class="mock-topbar">
+              <div class="mock-search">🔍 &nbsp;Search findings, resources, accounts...</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim)">Last synced: 2m ago</span>
+                <div style="background:var(--accent);color:#000;padding:5px 14px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;">+ ASSIGN</div>
+              </div>
+            </div>
+            <!-- Filter Row -->
+            <div class="mock-filter-row">
+              <div class="mock-filter-chip active">All Clouds</div>
+              <div class="mock-filter-chip">AWS</div>
+              <div class="mock-filter-chip">GCP</div>
+              <div class="mock-filter-chip">Azure</div>
+              <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+              <div class="mock-filter-chip">🔴 Critical</div>
+              <div class="mock-filter-chip">🟠 High</div>
+              <div class="mock-filter-chip">🔵 Medium</div>
+              <div class="mock-filter-chip">🟢 Low</div>
+              <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+              <div class="mock-filter-chip">IAM</div>
+              <div class="mock-filter-chip">Storage</div>
+              <div class="mock-filter-chip">Network</div>
+            </div>
+            <!-- Stats -->
+            <div class="mock-stats-row">
+              <div class="mock-stat-card" style="border-left:3px solid var(--danger)">
+                <div class="mock-stat-label">Critical</div>
+                <div class="mock-stat-num" style="color:var(--danger)">23</div>
+                <div class="mock-stat-sub">↑ 3 from yesterday</div>
+              </div>
+              <div class="mock-stat-card" style="border-left:3px solid var(--warn)">
+                <div class="mock-stat-label">High</div>
+                <div class="mock-stat-num" style="color:var(--warn)">147</div>
+                <div class="mock-stat-sub">↓ 8 from yesterday</div>
+              </div>
+              <div class="mock-stat-card" style="border-left:3px solid var(--accent)">
+                <div class="mock-stat-label">Medium</div>
+                <div class="mock-stat-num" style="color:var(--accent)">312</div>
+                <div class="mock-stat-sub">No change</div>
+              </div>
+              <div class="mock-stat-card" style="border-left:3px solid var(--ok)">
+                <div class="mock-stat-label">Posture Score</div>
+                <div class="mock-stat-num" style="color:var(--ok)">74%</div>
+                <div class="mock-stat-sub">↑ 2pts this week</div>
+              </div>
+            </div>
+            <!-- Table -->
+            <div class="mock-table">
+              <div class="mock-table-header">
+                <span>FINDING</span>
+                <span>ACCOUNT / REGION</span>
+                <span>SEVERITY</span>
+                <span>RESOURCE</span>
+                <span>STATUS</span>
+              </div>
+              <div class="mock-table-row">
+                <span style="color:var(--text)">Public S3 Bucket exposed</span>
+                <span>aws-prod-01 / us-east-1</span>
+                <span><div class="sev-badge sev-critical">Critical</div></span>
+                <span>bucket:analytics-raw</span>
+                <span style="color:var(--danger)">● Open</span>
+              </div>
+              <div class="mock-table-row">
+                <span style="color:var(--text)">Root account MFA disabled</span>
+                <span>aws-dev-02 / global</span>
+                <span><div class="sev-badge sev-critical">Critical</div></span>
+                <span>iam:root</span>
+                <span style="color:var(--warn)">● In Review</span>
+              </div>
+              <div class="mock-table-row">
+                <span style="color:var(--text)">Unencrypted RDS instance</span>
+                <span>gcp-analytics / us-central1</span>
+                <span><div class="sev-badge sev-high">High</div></span>
+                <span>db:reporting-prod</span>
+                <span style="color:var(--danger)">● Open</span>
+              </div>
+              <div class="mock-table-row">
+                <span style="color:var(--text)">Security group allows 0.0.0.0</span>
+                <span>aws-prod-01 / eu-west-2</span>
+                <span><div class="sev-badge sev-high">High</div></span>
+                <span>sg:web-frontend</span>
+                <span style="color:var(--ok)">● Resolved</span>
+              </div>
+              <div class="mock-table-row">
+                <span style="color:var(--text)">CloudTrail logging disabled</span>
+                <span>azure-infra / eastus</span>
+                <span><div class="sev-badge sev-medium">Medium</div></span>
+                <span>trail:primary</span>
+                <span style="color:var(--danger)">● Open</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-annotation">
+        <h4>📌 Screen 1 Annotations</h4>
+        <ul>
+          <li>Persistent global filter bar at top allows stacking filters (cloud + severity + resource type) without losing context</li>
+          <li>4 KPI tiles give instant severity breakdown + posture score trend — designed for Priya's daily standup</li>
+          <li>Table is sortable and keyboard-navigable; clicking any row opens the detail panel (Screen 2)</li>
+          <li>Real-time sync indicator builds trust in data freshness — critical for security teams</li>
+          <li>Color-coded severity uses WCAG-compliant palette with both color and icon for accessibility</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── WF SCREEN 2 ── -->
+    <div class="wireframe-screen" id="wf-wf2">
+      <div class="mock-window">
+        <div class="mock-titlebar">
+          <div class="mock-dot" style="background:#ff5f56"></div>
+          <div class="mock-dot" style="background:#ffbd2e"></div>
+          <div class="mock-dot" style="background:#27c93f"></div>
+          <span class="mock-titlebar-title">CloudPosture — Finding Detail</span>
+        </div>
+        <div class="mock-layout">
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-logo">☁ CloudPosture</div>
+            <div class="mock-nav-item active">🔍 Findings</div>
+            <div class="mock-nav-item">📊 Dashboard</div>
+            <div class="mock-nav-item">🏛️ Accounts</div>
+            <div class="mock-nav-item">📋 Compliance</div>
+            <div class="mock-nav-item">📈 Reports</div>
+          </div>
+          <div style="flex:1;overflow:auto;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);">
+              <div class="mock-breadcrumb">Dashboard → Findings → <span style="color:var(--accent)">FIND-2847</span></div>
+              <div class="detail-header">
+                <div>
+                  <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+                    <div class="sev-badge sev-critical">Critical</div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim)">FIND-2847 · AWS · IAM</span>
+                  </div>
+                  <div class="detail-title">Public S3 Bucket Exposed to Internet</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-shrink:0;">
+                  <div style="background:var(--surface2);border:1px solid var(--border);padding:6px 14px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:var(--text-dim);">← PREV</div>
+                  <div style="background:var(--surface2);border:1px solid var(--border);padding:6px 14px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:var(--text-dim);">NEXT →</div>
+                  <div style="background:var(--accent);color:#000;padding:6px 14px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;font-weight:600;">ASSIGN ↗</div>
+                </div>
+              </div>
+            </div>
+            <div class="mock-detail-panel">
+              <div class="mock-detail-main">
+                <div class="detail-meta-grid">
+                  <div class="detail-meta-item"><div class="detail-meta-key">Account</div><div class="detail-meta-val">aws-prod-01</div></div>
+                  <div class="detail-meta-item"><div class="detail-meta-key">Region</div><div class="detail-meta-val">us-east-1</div></div>
+                  <div class="detail-meta-item"><div class="detail-meta-key">Resource</div><div class="detail-meta-val">s3::analytics-raw</div></div>
+                  <div class="detail-meta-item"><div class="detail-meta-key">First Seen</div><div class="detail-meta-val">Mar 01, 2026</div></div>
+                  <div class="detail-meta-item"><div class="detail-meta-key">Compliance</div><div class="detail-meta-val" style="color:var(--danger)">SOC2, CIS L2</div></div>
+                  <div class="detail-meta-item"><div class="detail-meta-key">CVSS Score</div><div class="detail-meta-val" style="color:var(--danger)">9.1 / Critical</div></div>
+                </div>
+
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:14px;">
+                  <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);letter-spacing:0.08em;margin-bottom:8px;text-transform:uppercase;">Description</div>
+                  <p>The S3 bucket <code style="color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;">analytics-raw-prod-2024</code> has its ACL set to public-read. Any unauthenticated user can list and download objects, which may include PII or sensitive business data.</p>
+                </div>
+
+                <div class="remediation-steps">
+                  <h4>✅ Remediation Steps</h4>
+                  <div class="step-item"><div class="step-num">1</div><span>Run: <code style="color:var(--ok)">aws s3api put-bucket-acl --bucket analytics-raw-prod-2024 --acl private</code></span></div>
+                  <div class="step-item"><div class="step-num">2</div><span>Verify no bucket policy grants s3:GetObject to "*" principal</span></div>
+                  <div class="step-item"><div class="step-num">3</div><span>Enable S3 Block Public Access at account level for preventive control</span></div>
+                  <div class="step-item"><div class="step-num">4</div><span>Re-scan in CloudPosture to verify finding is resolved (auto-closes on next sync)</span></div>
+                </div>
+              </div>
+
+              <div class="mock-detail-side">
+                <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.1em;margin-bottom:12px;text-transform:uppercase;">Activity</div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);border-bottom:1px solid var(--border);padding-bottom:10px;"><span style="color:var(--text)">Priya M.</span> detected finding<br/><span style="opacity:0.5;">Mar 01 · 09:14 AM</span></div>
+                  <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);border-bottom:1px solid var(--border);padding-bottom:10px;"><span style="color:var(--text)">Auto-assigned</span> to Aditya S.<br/><span style="opacity:0.5;">Mar 01 · 09:15 AM</span></div>
+                  <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim)"><span style="color:var(--warn)">In review</span> — Aditya S.<br/><span style="opacity:0.5;">Mar 03 · 02:30 PM</span></div>
+                </div>
+
+                <div style="margin-top:20px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--accent);letter-spacing:0.1em;margin-bottom:12px;text-transform:uppercase;">Related Findings</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;">FIND-2831 · S3 Lifecycle missing<br/><span style="color:var(--warn)">High</span></div>
+                  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;">FIND-2805 · Bucket logging off<br/><span style="color:var(--accent)">Medium</span></div>
+                </div>
+
+                <div style="margin-top:20px;">
+                  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);cursor:pointer;text-align:center;">📎 Open Jira Ticket →</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-annotation">
+        <h4>📌 Screen 2 Annotations</h4>
+        <ul>
+          <li>Breadcrumb navigation maintains context — users can return to filtered list without losing state</li>
+          <li>PREV/NEXT pagination allows Priya to triage findings sequentially without returning to list view</li>
+          <li>Remediation steps are copy-pasteable CLI commands — directly addressing Aditya's need for actionable fixes</li>
+          <li>Activity sidebar shows audit trail for compliance — who saw it, who is working on it, when</li>
+          <li>Related findings surface adjacent misconfigs on the same resource, enabling batch remediation</li>
+          <li>Jira integration CTA enables one-click ticket creation for DevOps handoff</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── WF SCREEN 3 ── -->
+    <div class="wireframe-screen" id="wf-wf3">
+      <div class="mock-window">
+        <div class="mock-titlebar">
+          <div class="mock-dot" style="background:#ff5f56"></div>
+          <div class="mock-dot" style="background:#ffbd2e"></div>
+          <div class="mock-dot" style="background:#27c93f"></div>
+          <span class="mock-titlebar-title">CloudPosture — Executive Risk Summary</span>
+        </div>
+        <div class="mock-layout">
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-logo">☁ CloudPosture</div>
+            <div class="mock-nav-item">📊 Dashboard</div>
+            <div class="mock-nav-item">🔍 Findings</div>
+            <div class="mock-nav-item">🏛️ Accounts</div>
+            <div class="mock-nav-item">📋 Compliance</div>
+            <div class="mock-nav-item active">📈 Reports</div>
+          </div>
+          <div style="flex:1;overflow:auto;">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Executive Risk Summary — Mar 2026</div>
+              <div style="display:flex;gap:8px;">
+                <div style="background:var(--surface2);border:1px solid var(--border);padding:6px 12px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:var(--text-dim);">📧 Email Report</div>
+                <div style="background:var(--surface2);border:1px solid var(--border);padding:6px 12px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:var(--text-dim);">⬇ PDF Export</div>
+              </div>
+            </div>
+            <div class="mock-risk-main">
+              <div class="risk-gauge-row">
+                <div class="risk-gauge">
+                  <div class="gauge-label">Posture Score</div>
+                  <div class="gauge-circle" style="border:6px solid var(--ok);box-shadow:0 0 20px rgba(46,213,115,0.2);">
+                    <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--ok)">74</span>
+                    <span style="font-size:9px;color:var(--text-dim)">/ 100</span>
+                  </div>
+                  <div style="font-size:10px;color:var(--ok);font-family:'IBM Plex Mono',monospace;">↑ +2pts vs last week</div>
+                </div>
+                <div class="risk-gauge">
+                  <div class="gauge-label">Critical Open</div>
+                  <div class="gauge-circle" style="border:6px solid var(--danger);box-shadow:0 0 20px rgba(255,71,87,0.2);">
+                    <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--danger)">23</span>
+                    <span style="font-size:9px;color:var(--text-dim)">findings</span>
+                  </div>
+                  <div style="font-size:10px;color:var(--danger);font-family:'IBM Plex Mono',monospace;">↑ +3 since last week</div>
+                </div>
+                <div class="risk-gauge">
+                  <div class="gauge-label">MTTR</div>
+                  <div class="gauge-circle" style="border:6px solid var(--accent);box-shadow:0 0 20px rgba(0,212,255,0.15);">
+                    <span style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent)">4.2</span>
+                    <span style="font-size:9px;color:var(--text-dim)">days</span>
+                  </div>
+                  <div style="font-size:10px;color:var(--ok);font-family:'IBM Plex Mono',monospace;">↓ Improved from 6.1d</div>
+                </div>
+              </div>
+
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:16px;">
+                <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">Findings by Category</div>
+                <div class="bar-chart">
+                  <div class="bar-row">
+                    <div class="bar-label">IAM</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--danger)"></div></div>
+                    <div class="bar-val" style="color:var(--danger)">168</div>
+                  </div>
+                  <div class="bar-row">
+                    <div class="bar-label">Storage</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:51%;background:var(--warn)"></div></div>
+                    <div class="bar-val" style="color:var(--warn)">118</div>
+                  </div>
+                  <div class="bar-row">
+                    <div class="bar-label">Network</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:42%;background:var(--accent)"></div></div>
+                    <div class="bar-val" style="color:var(--accent)">97</div>
+                  </div>
+                  <div class="bar-row">
+                    <div class="bar-label">Compute</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--ok)"></div></div>
+                    <div class="bar-val" style="color:var(--ok)">64</div>
+                  </div>
+                  <div class="bar-row">
+                    <div class="bar-label">Logging</div>
+                    <div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--muted)"></div></div>
+                    <div class="bar-val">37</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);border-radius:6px;padding:14px;">
+                <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--danger);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Top Risk Items Requiring Executive Attention</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);display:flex;gap:10px;"><span style="color:var(--danger)">●</span>Root MFA disabled across 3 accounts — data exposure risk</div>
+                  <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);display:flex;gap:10px;"><span style="color:var(--danger)">●</span>23 public S3 buckets — potential PII exfiltration</div>
+                  <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-dim);display:flex;gap:10px;"><span style="color:var(--warn)">●</span>CloudTrail disabled in 2 regions — SOC 2 audit risk</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-annotation">
+        <h4>📌 Screen 3 Annotations</h4>
+        <ul>
+          <li>3-metric summary row gives Marcus an instant read — Posture Score, Critical Count, and MTTR are the three numbers leadership care about</li>
+          <li>Category bar chart makes it clear which cloud service category is the biggest risk surface</li>
+          <li>Executive attention panel pre-filters the top 3 risks — no hunting required for board prep</li>
+          <li>Email Report and PDF Export allow async sharing — Marcus can forward this to the board without logging in again</li>
+          <li>All metrics show trend (up/down vs prior period) to support narrative storytelling in leadership reviews</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SECTION 3: FEATURES & PRIORITIZATION -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section" id="section-features">
+
+    <div class="section-label">03 / Features & Prioritization</div>
+    <h2 class="section-title">What We Build and Why</h2>
+
+    <p style="margin-bottom:32px;max-width:720px;">Features are prioritized using the <strong style="color:var(--accent)">RICE framework</strong> (Reach × Impact × Confidence ÷ Effort). P0 items are table stakes — the product cannot ship without them. P1 items unlock the core value loop. P2 and P3 are differentiators and growth levers.</p>
+
+    <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:40px;">
+
+      <div class="feature-card" data-priority="P0">
+        <div class="feature-num">FEATURE 01 · P0 · MUST HAVE</div>
+        <div class="feature-title">Unified Multi-Cloud Findings Aggregator</div>
+        <p class="feature-desc">Ingest and normalize findings from AWS Security Hub, GCP Security Command Center, and Azure Defender into a single schema. Without this, the product doesn't exist. Must handle deduplication across tools (same resource, multiple scanners).</p>
+        <div class="feature-tags">
+          <span class="tag tag-red">Core Architecture</span>
+          <span class="tag tag-blue">AWS + GCP + Azure</span>
+          <span class="tag tag-orange">Deduplication Engine</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P0">
+        <div class="feature-num">FEATURE 02 · P0 · MUST HAVE</div>
+        <div class="feature-title">Multi-Dimensional Filter Engine</div>
+        <p class="feature-desc">Users must be able to filter findings by any combination of: cloud provider, account, region, severity, resource type, compliance framework, and status — simultaneously and persistently. Filters must be bookmark-able and shareable via URL.</p>
+        <div class="feature-tags">
+          <span class="tag tag-red">Core UX</span>
+          <span class="tag tag-blue">URL-Shareable State</span>
+          <span class="tag tag-green">Bookmarkable Filters</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P1">
+        <div class="feature-num">FEATURE 03 · P1 · HIGH VALUE</div>
+        <div class="feature-title">Contextual Remediation Playbooks</div>
+        <p class="feature-desc">Each finding surfaces a step-by-step remediation guide with CLI commands, Terraform snippets, and console walkthrough links. Tailored to the specific resource, account type, and cloud provider. Directly reduces engineer toil and MTTR.</p>
+        <div class="feature-tags">
+          <span class="tag tag-orange">High Impact</span>
+          <span class="tag tag-blue">CLI + Terraform</span>
+          <span class="tag tag-green">MTTR Reduction</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P1">
+        <div class="feature-num">FEATURE 04 · P1 · HIGH VALUE</div>
+        <div class="feature-title">Posture Score + Trending Dashboard</div>
+        <p class="feature-desc">A composite score (0–100) calculated from open findings weighted by severity. Show week-over-week trend, breakdown by account and category. This gives Marcus his "one number" for board reporting and creates a motivation loop for Priya's team.</p>
+        <div class="feature-tags">
+          <span class="tag tag-orange">Executive Layer</span>
+          <span class="tag tag-blue">Gamification</span>
+          <span class="tag tag-green">Retention Driver</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P2">
+        <div class="feature-num">FEATURE 05 · P2 · STRATEGIC</div>
+        <div class="feature-title">Jira / Slack Integration for Assignment & Alerts</div>
+        <p class="feature-desc">One-click Jira ticket creation from a finding. Slack webhook alerts for new Critical findings. This closes the DevOps handoff loop and embeds the product in existing workflows — increasing stickiness and expanding our persona coverage to Aditya.</p>
+        <div class="feature-tags">
+          <span class="tag tag-blue">Integrations</span>
+          <span class="tag tag-orange">Workflow Embedding</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P2">
+        <div class="feature-num">FEATURE 06 · P2 · STRATEGIC</div>
+        <div class="feature-title">Compliance Mapping (SOC 2, CIS, NIST)</div>
+        <p class="feature-desc">Tag each finding with the compliance controls it violates. Enable filtering and reporting by framework. Produce a compliance-ready report as PDF. Unlocks enterprise sales motions and satisfies auditor requirements.</p>
+        <div class="feature-tags">
+          <span class="tag tag-blue">SOC 2 · CIS · NIST</span>
+          <span class="tag tag-orange">Enterprise Sales</span>
+          <span class="tag tag-red">Compliance Risk</span>
+        </div>
+      </div>
+
+      <div class="feature-card" data-priority="P3">
+        <div class="feature-num">FEATURE 07 · P3 · DELIGHT / BONUS</div>
+        <div class="feature-title">AI-Powered Risk Summarization</div>
+        <p class="feature-desc">Use LLM to generate a plain-English weekly summary: "Your top 3 risks this week are X, Y, Z — here's why they matter and what to do." Targeted at executives who don't read tables. Requires solid data foundation from P0/P1 features first.</p>
+        <div class="feature-tags">
+          <span class="tag tag-blue">AI / LLM</span>
+          <span class="tag tag-green">Executive Delight</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PRIORITIZATION MATRIX -->
+    <div class="section-label">Prioritization Matrix</div>
+    <p style="margin-bottom:24px;">Impact vs. Effort — each dot represents a feature. Ideal features: high impact, low effort (top-left).</p>
+
+    <div class="matrix-wrap">
+      <div class="matrix-label-y">← LOWER EFFORT · HIGHER EFFORT →</div>
+      <div style="padding-left:60px;padding-bottom:40px;">
+        <div class="matrix-grid" id="matrixGrid">
+          <div class="matrix-quadrant" style="top:5%;left:5%;color:rgba(46,213,115,0.5);">QUICK WIN ★</div>
+          <div class="matrix-quadrant" style="top:5%;right:5%;color:rgba(0,212,255,0.3);">STRATEGIC</div>
+          <div class="matrix-quadrant" style="bottom:5%;left:5%;color:rgba(255,165,2,0.3);">FILL-IN</div>
+          <div class="matrix-quadrant" style="bottom:5%;right:5%;color:rgba(255,71,87,0.3);">AVOID / DEFER</div>
+
+          <!-- Divider lines -->
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);"></div>
+          <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);"></div>
+
+          <!-- Feature dots -->
+          <div class="matrix-dot" style="left:20%;bottom:85%;background:rgba(255,71,87,0.1);border-color:var(--danger);color:var(--danger);">
+            F1<div class="tooltip">Findings Aggregator (P0)</div>
+          </div>
+          <div class="matrix-dot" style="left:15%;bottom:75%;background:rgba(255,71,87,0.1);border-color:var(--danger);color:var(--danger);">
+            F2<div class="tooltip">Filter Engine (P0)</div>
+          </div>
+          <div class="matrix-dot" style="left:30%;bottom:82%;background:rgba(255,165,2,0.1);border-color:var(--warn);color:var(--warn);">
+            F3<div class="tooltip">Remediation Playbooks (P1)</div>
+          </div>
+          <div class="matrix-dot" style="left:25%;bottom:70%;background:rgba(255,165,2,0.1);border-color:var(--warn);color:var(--warn);">
+            F4<div class="tooltip">Posture Score (P1)</div>
+          </div>
+          <div class="matrix-dot" style="left:55%;bottom:70%;background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent);">
+            F5<div class="tooltip">Jira/Slack Integration (P2)</div>
+          </div>
+          <div class="matrix-dot" style="left:65%;bottom:60%;background:rgba(0,212,255,0.1);border-color:var(--accent);color:var(--accent);">
+            F6<div class="tooltip">Compliance Mapping (P2)</div>
+          </div>
+          <div class="matrix-dot" style="left:72%;bottom:35%;background:rgba(127,255,107,0.1);border-color:var(--accent3);color:var(--accent3);">
+            F7<div class="tooltip">AI Summarization (P3)</div>
+          </div>
+        </div>
+        <div class="matrix-label-x">IMPACT →</div>
+      </div>
+    </div>
+
+    <!-- ROADMAP TIMELINE -->
+    <div class="section-label">Delivery Roadmap</div>
+    <div class="timeline" style="margin-top:24px;">
+      <div class="timeline-item">
+        <div class="timeline-period">SPRINT 1–3 · WEEKS 1–6</div>
+        <div class="timeline-title">Foundation</div>
+        <p>Build the data ingestion layer (AWS + GCP connectors), normalize the finding schema, implement the filter engine, and ship the main dashboard with table view.</p>
+        <div class="persona-tags" style="margin-top:10px;">
+          <span class="tag tag-red">F1 · Aggregator</span>
+          <span class="tag tag-red">F2 · Filter Engine</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-period">SPRINT 4–6 · WEEKS 7–12</div>
+        <div class="timeline-title">Core Value Loop</div>
+        <p>Add remediation playbooks, posture scoring, and the finding detail view. Ship to beta customers. Begin collecting MTTR and engagement data.</p>
+        <div class="persona-tags" style="margin-top:10px;">
+          <span class="tag tag-orange">F3 · Playbooks</span>
+          <span class="tag tag-orange">F4 · Posture Score</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-period">SPRINT 7–9 · WEEKS 13–18</div>
+        <div class="timeline-title">Integrations & Compliance</div>
+        <p>Jira and Slack integrations. Compliance framework mapping. Executive risk summary screen. Azure connector. PDF export.</p>
+        <div class="persona-tags" style="margin-top:10px;">
+          <span class="tag tag-blue">F5 · Integrations</span>
+          <span class="tag tag-blue">F6 · Compliance</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-period">SPRINT 10+ · WEEK 19+</div>
+        <div class="timeline-title">Intelligence Layer</div>
+        <p>AI-powered weekly risk summaries. Anomaly detection for posture spikes. Custom policy rules engine for enterprise customers.</p>
+        <div class="persona-tags" style="margin-top:10px;">
+          <span class="tag tag-green">F7 · AI Summarization</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SECTION 4: SUCCESS METRICS -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section" id="section-metrics">
+
+    <div class="section-label">04 / Success Metrics</div>
+    <h2 class="section-title">How We Know It's Working</h2>
+
+    <p style="margin-bottom:36px;max-width:720px;">Metrics are organized across three layers: <strong style="color:var(--accent)">User Engagement</strong> (are people using it?), <strong style="color:var(--accent2)">Product Efficacy</strong> (is it reducing risk?), and <strong style="color:var(--accent3)">Business Value</strong> (does it drive retention and growth?).</p>
+
+    <div class="section-label">User Engagement Metrics</div>
+    <div class="grid-3" style="margin-bottom:32px;">
+      <div class="metric-card">
+        <div class="metric-icon">📅</div>
+        <div class="metric-name">DAU / WAU</div>
+        <div class="metric-target">≥ 60%</div>
+        <div class="metric-desc">Daily active / weekly active ratio. Security tools should be checked daily during triage cycles.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-name">Time to First Filter</div>
+        <div class="metric-target">&lt; 30 sec</div>
+        <div class="metric-desc">How quickly a new user applies their first meaningful filter on the dashboard.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🔗</div>
+        <div class="metric-name">Shared Filter Links</div>
+        <div class="metric-target">≥ 3/user/mo</div>
+        <div class="metric-desc">Measures collaborative use. Teams sharing saved views = deep workflow integration.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Product Efficacy Metrics</div>
+    <div class="grid-3" style="margin-bottom:32px;">
+      <div class="metric-card">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-name">Mean Time to Remediate</div>
+        <div class="metric-target">↓ 40%</div>
+        <div class="metric-desc">Reduction in MTTR for critical findings within 90 days of onboarding. Baseline from pre-product data.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">📊</div>
+        <div class="metric-name">Posture Score Lift</div>
+        <div class="metric-target">+10 pts / 90d</div>
+        <div class="metric-desc">Average posture score improvement across all active tenants in the first 90 days post-launch.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🎯</div>
+        <div class="metric-name">Critical Finding SLA</div>
+        <div class="metric-target">≥ 80% in 48h</div>
+        <div class="metric-desc">Percentage of critical findings that move to "In Review" or "Resolved" within 48 hours of detection.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Business Value Metrics</div>
+    <div class="grid-3" style="margin-bottom:32px;">
+      <div class="metric-card">
+        <div class="metric-icon">🔄</div>
+        <div class="metric-name">30-Day Retention</div>
+        <div class="metric-target">≥ 75%</div>
+        <div class="metric-desc">Percentage of teams returning weekly after initial onboarding. Target: top-quartile B2B SaaS benchmark.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">💬</div>
+        <div class="metric-name">NPS Score</div>
+        <div class="metric-target">≥ 45</div>
+        <div class="metric-desc">Net Promoter Score from quarterly security team surveys. Security tools have historically low NPS — we aim to change that.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🚀</div>
+        <div class="metric-name">Integration Adoption</div>
+        <div class="metric-target">≥ 40% of accounts</div>
+        <div class="metric-desc">Percentage of customers connecting at least one integration (Jira/Slack) within 60 days — proxy for workflow depth.</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <div class="card-title" style="color:var(--accent2);">⚠ Anti-Metrics (What We Should NOT Optimize For)</div>
+      <p>We explicitly avoid optimizing for <strong style="color:var(--text)">total findings count</strong> — a tool that shows more alerts isn't better, it's noisier. We also don't celebrate <strong style="color:var(--text)">page views or session length</strong> — our goal is for Priya to solve her problem fast and leave, not to keep her in the tool longer. Time-in-app is not a proxy for value in security tooling.</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- SECTION 5: DEV ACTION ITEMS (BONUS) -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="section" id="section-devactions">
+
+    <div class="section-label">05 / Dev Action Items · Bonus</div>
+    <h2 class="section-title">Engineering Discussion Points</h2>
+
+    <p style="margin-bottom:32px;max-width:720px;">These are the technical decisions and open questions to bring into sprint planning and architecture reviews with the development team. Organized by domain.</p>
+
+    <div class="card" style="margin-bottom:32px;overflow:auto;">
+      <table class="dev-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Action Item</th>
+            <th>Domain</th>
+            <th>Discussion Points</th>
+            <th>Effort</th>
+            <th>Sprint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-01</td>
+            <td style="color:var(--text);font-weight:600;">Finding Ingestion Architecture</td>
+            <td><span class="tag tag-blue">Backend</span></td>
+            <td>Poll vs webhook from cloud providers? SQS/Pub-Sub event-driven preferred. How often to sync — real-time vs 15-min batch? Data retention policy for historical findings.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 1</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-02</td>
+            <td style="color:var(--text);font-weight:600;">Normalized Finding Schema</td>
+            <td><span class="tag tag-blue">Backend</span></td>
+            <td>Design a provider-agnostic finding schema (id, title, severity, account_id, region, resource_arn, first_seen, status, remediation_steps). Decide on severity normalization: AWS uses CRITICAL/HIGH; GCP uses CRITICAL/HIGH/MEDIUM — must be unified.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 1</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-03</td>
+            <td style="color:var(--text);font-weight:600;">Filter State in URL</td>
+            <td><span class="tag tag-orange">Frontend</span></td>
+            <td>All active filters must be serialized into URL query params so links are shareable. Discuss whether to use Base64-encoded JSON or human-readable params. Consider filter persistence in user preferences (localStorage + server-side).</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 2</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-04</td>
+            <td style="color:var(--text);font-weight:600;">Deduplication Engine</td>
+            <td><span class="tag tag-blue">Backend</span></td>
+            <td>Same misconfiguration may surface from multiple scanners (e.g., AWS Security Hub AND a custom Prowler scan). Need a deduplication strategy: fingerprint by (account + region + resource_arn + rule_id). Discuss merge vs. link approach for related findings.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 2</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-05</td>
+            <td style="color:var(--text);font-weight:600;">Posture Score Algorithm</td>
+            <td><span class="tag tag-blue">Backend</span></td>
+            <td>Define the scoring formula — weighted sum by severity? CVSS-based? Consider: Total Resources scanned vs. findings open ratio. Need to handle edge case: 0 findings could mean all clear OR scanner didn't run. Align with PM on floor/ceiling values.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 4</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-06</td>
+            <td style="color:var(--text);font-weight:600;">IAM & Multi-Tenant Auth</td>
+            <td><span class="tag tag-red">Security</span></td>
+            <td>Each customer tenant should only see their own cloud accounts. RBAC: Admin, SecOps, ReadOnly, Dev roles. SSO (SAML/OIDC) is a must for enterprise. Discuss row-level security in the DB and audit log for all data access.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 1</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-07</td>
+            <td style="color:var(--text);font-weight:600;">Jira Integration Webhook</td>
+            <td><span class="tag tag-green">Integrations</span></td>
+            <td>Use Jira REST API (OAuth 2.0). Fields to auto-populate: title, description, severity, assignee, due date. Handle failure gracefully (retry queue). Discuss bidirectional sync: if Jira ticket is closed, auto-update finding status?</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 7</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-08</td>
+            <td style="color:var(--text);font-weight:600;">Table Virtualization (Performance)</td>
+            <td><span class="tag tag-orange">Frontend</span></td>
+            <td>Customers may have 10,000+ findings. The findings table must use virtual scrolling (react-virtual or similar) — never paginate-only. Also discuss server-side filtering vs. client-side. Recommend server-side with debounced query for large datasets.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 3</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-09</td>
+            <td style="color:var(--text);font-weight:600;">Remediation Playbook Content Pipeline</td>
+            <td><span class="tag tag-blue">Backend</span></td>
+            <td>Playbooks must be versioned and kept up-to-date with cloud provider changes. Recommend a CMS-backed approach for PM/content team to update without deploys. Discuss mapping: finding_rule_id → playbook_id → steps. Support for custom playbooks per tenant.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 5</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:'IBM Plex Mono',monospace;color:var(--accent)">DEV-10</td>
+            <td style="color:var(--text);font-weight:600;">Alerting & Notification Engine</td>
+            <td><span class="tag tag-green">Integrations</span></td>
+            <td>Email + Slack alerts for new Critical findings. Should support: per-user alert preferences, digest mode (hourly/daily), alert suppression rules (don't re-alert on same finding). Discuss underlying infra: SES + SNS or a 3rd-party notification service.</td>
+            <td><div class="effort-bar"><div class="effort-pip filled"></div><div class="effort-pip filled"></div><div class="effort-pip"></div><div class="effort-pip"></div><div class="effort-pip"></div></div></td>
+            <td><span class="sprint-badge">Sprint 8</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="border-top:3px solid var(--accent);">
+        <div class="card-title">🏗️ Recommended Tech Stack Discussion</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+          <div class="pain-item"><span class="pain-icon">⚡</span><span><strong style="color:var(--text)">Frontend:</strong> React + TypeScript, TanStack Query for server state, Zustand for UI state, react-virtual for table perf</span></div>
+          <div class="pain-item"><span class="pain-icon">🔧</span><span><strong style="color:var(--text)">Backend:</strong> Python FastAPI or Go for ingestion pipelines; PostgreSQL with JSONB for finding metadata</span></div>
+          <div class="pain-item"><span class="pain-icon">🔄</span><span><strong style="color:var(--text)">Queuing:</strong> AWS SQS or Kafka for event-driven ingestion from cloud providers</span></div>
+          <div class="pain-item"><span class="pain-icon">🔍</span><span><strong style="color:var(--text)">Search:</strong> Elasticsearch or Typesense for full-text + faceted filtering at scale</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--accent2);">
+        <div class="card-title">⚠️ Technical Risks to Discuss</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+          <div class="pain-item"><span class="pain-icon">🔴</span><span>Cloud provider API rate limits — need backoff + caching strategy for high-frequency polling</span></div>
+          <div class="pain-item"><span class="pain-icon">🔴</span><span>Cross-tenant data isolation — must be tested with dedicated security review before GA</span></div>
+          <div class="pain-item"><span class="pain-icon">🟠</span><span>Finding schema drift — cloud providers update their finding formats regularly, need a versioned adapter pattern</span></div>
+          <div class="pain-item"><span class="pain-icon">🟠</span><span>Remediation freshness — CLI commands change; need a content review cadence tied to provider release notes</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>☁ CloudPosture Dashboard — PM Brief · March 2026</p>
+  <p>Built with intention · All screens are interactive wireframes · <span style="color:var(--accent)">CloudPosture v1.0</span></p>
+</footer>
+
+<script>
+// ── Tab navigation
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Wireframe tabs
+function showWireframe(id, btn) {
+  document.querySelectorAll('.wireframe-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.wf-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('wf-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Filter chip toggle
+document.querySelectorAll('.mock-filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    this.classList.toggle('active');
+  });
+});
+
+// ── Mock nav items
+document.querySelectorAll('.mock-nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    const parent = this.closest('.mock-sidebar');
+    parent.querySelectorAll('.mock-nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ── Download file
+function downloadFile() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cloud-posture-dashboard-pm-brief.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+
+</body>
+</html>
