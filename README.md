@@ -567,21 +567,7 @@ Full design prototype:
 
 Figma Link:
 https://twirl-jolt-09806602.figma.site/
-
-Author
-
-Prathiba
-
-Master’s in Computer Science
-Aspiring Product Manager
-
-Interested in building products at the intersection of:
-
-Cloud Infrastructure
-
-Security
-
-AI-driven Platforms
+https://preeminent-chebakia-1a59ff.netlify.app/
 
 Author
 
