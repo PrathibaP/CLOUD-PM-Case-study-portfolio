@@ -876,6 +876,224 @@ body::after {
   animation: fadeIn 0.3s;
 }
 .dl-progress.show { display: block; }
+
+  /* ── ABOUT SECTION ─────────────────────────────── */
+  .about-section {
+    padding: 80px 0 60px;
+    position: relative;
+  }
+  .about-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 768px) {
+    .about-inner { grid-template-columns: 1fr; }
+  }
+  .about-left {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .about-left::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(0,245,212,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .about-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--c1), var(--c3));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+    border: 2px solid rgba(0,245,212,0.3);
+    box-shadow: 0 0 30px rgba(0,245,212,0.15);
+  }
+  .about-name {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+  }
+  .about-role {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--c1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .about-bio {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.8;
+    margin-bottom: 28px;
+  }
+  .about-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .about-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--r);
+    border: 1px solid var(--border);
+    background: var(--base);
+    text-decoration: none;
+    transition: all 0.2s;
+    group: true;
+  }
+  .about-link:hover {
+    border-color: var(--border2);
+    background: var(--raised);
+    transform: translateX(4px);
+  }
+  .about-link-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .link-li .about-link-icon { background: rgba(10,102,194,0.2); border: 1px solid rgba(10,102,194,0.35); }
+  .link-gh .about-link-icon { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); }
+  .link-pt .about-link-icon { background: rgba(155,143,255,0.15); border: 1px solid rgba(155,143,255,0.3); }
+  .about-link-info { flex: 1; min-width: 0; }
+  .about-link-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+  .about-link-value {
+    font-size: 0.82rem;
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .link-li:hover .about-link-value { color: #0a66c2; }
+  .link-gh:hover .about-link-value { color: #e0e0e0; }
+  .link-pt:hover .about-link-value { color: var(--c3); }
+  .about-link-arrow {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    transition: transform 0.2s, color 0.2s;
+  }
+  .about-link:hover .about-link-arrow {
+    transform: translateX(3px);
+    color: var(--text-dim);
+  }
+  .about-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .about-stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .about-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .about-stat::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .about-stat.s1::after { background: linear-gradient(90deg, var(--c1), transparent); }
+  .about-stat.s2::after { background: linear-gradient(90deg, var(--c2), transparent); }
+  .about-stat.s3::after { background: linear-gradient(90deg, var(--c3), transparent); }
+  .about-stat.s4::after { background: linear-gradient(90deg, var(--c5), transparent); }
+  .about-stat-val {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .about-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .about-skills-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 24px;
+  }
+  .about-skills-title {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 14px;
+  }
+  .about-skills-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .about-chip {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    padding: 5px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    background: var(--base);
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .about-chip:hover {
+    border-color: var(--c1);
+    color: var(--c1);
+    background: rgba(0,245,212,0.05);
+  }
+  .about-quote {
+    background: linear-gradient(135deg, rgba(0,245,212,0.05), rgba(155,143,255,0.05));
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--c1);
+    border-radius: var(--r);
+    padding: 20px 24px;
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    font-style: italic;
+  }
+  .about-quote strong {
+    font-style: normal;
+    color: var(--text);
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -887,6 +1105,7 @@ body::after {
     <a href="#cases">Case Studies</a>
     <a href="#approach">Approach</a>
     <a href="#writeup">Write-up</a>
+    <a href="#about">About</a>
   </div>
   <button class="nav-dl-btn" onclick="downloadPortfolio()">
     ⬇ Download Portfolio
@@ -1335,6 +1554,102 @@ body::after {
     <span style="font-size:10px;color:var(--text-muted);margin-left:8px">3 HTML FILES</span>
   </button>
 </div>
+
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="wrap">
+    <div class="section-label">
+      <div class="section-label-text">04 / About Me</div>
+      <div class="section-label-line"></div>
+    </div>
+
+    <div class="about-inner">
+      <!-- LEFT: Profile + Links -->
+      <div class="about-left">
+        <div class="about-avatar">👩‍💻</div>
+        <div class="about-name">Prathiba P</div>
+        <div class="about-role">Product Management Trainee · Cloud Security</div>
+        <p class="about-bio">
+          Aspiring product manager with a passion for building tools that help security teams move faster and smarter. 
+          This portfolio showcases my approach to cloud security product design — grounded in user empathy, 
+          clear problem framing, and outcome-driven prioritization.
+        </p>
+        <div class="about-links">
+          <a href="https://www.linkedin.com/in/prathiba-p-50a948222" target="_blank" rel="noopener" class="about-link link-li">
+            <div class="about-link-icon">in</div>
+            <div class="about-link-info">
+              <div class="about-link-label">LinkedIn</div>
+              <div class="about-link-value">linkedin.com/in/prathiba-p-50a948222</div>
+            </div>
+            <span class="about-link-arrow">→</span>
+          </a>
+          <a href="https://github.com/PrathibaP" target="_blank" rel="noopener" class="about-link link-gh">
+            <div class="about-link-icon">⌥</div>
+            <div class="about-link-info">
+              <div class="about-link-label">GitHub</div>
+              <div class="about-link-value">github.com/PrathibaP</div>
+            </div>
+            <span class="about-link-arrow">→</span>
+          </a>
+          <a href="https://prathibapanaromicportfolio.base44.app/" target="_blank" rel="noopener" class="about-link link-pt">
+            <div class="about-link-icon">🌐</div>
+            <div class="about-link-info">
+              <div class="about-link-label">Portfolio Site</div>
+              <div class="about-link-value">prathibapanaromicportfolio.base44.app</div>
+            </div>
+            <span class="about-link-arrow">→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- RIGHT: Stats + Skills -->
+      <div class="about-right">
+        <div class="about-stat-row">
+          <div class="about-stat s1">
+            <div class="about-stat-val">3</div>
+            <div class="about-stat-label">Case Studies Completed</div>
+          </div>
+          <div class="about-stat s2">
+            <div class="about-stat-val">9</div>
+            <div class="about-stat-label">Product Screens Designed</div>
+          </div>
+          <div class="about-stat s3">
+            <div class="about-stat-val">20+</div>
+            <div class="about-stat-label">Dev Action Items Drafted</div>
+          </div>
+          <div class="about-stat s4">
+            <div class="about-stat-val">3</div>
+            <div class="about-stat-label">Cloud Domains Covered</div>
+          </div>
+        </div>
+
+        <div class="about-skills-card">
+          <div class="about-skills-title">// PM Skills Demonstrated</div>
+          <div class="about-skills-chips">
+            <span class="about-chip">Problem Framing</span>
+            <span class="about-chip">User Personas</span>
+            <span class="about-chip">Wireframing</span>
+            <span class="about-chip">Prioritization</span>
+            <span class="about-chip">Success Metrics</span>
+            <span class="about-chip">Dev Handoff</span>
+            <span class="about-chip">Jobs-to-be-Done</span>
+            <span class="about-chip">Cloud Security</span>
+            <span class="about-chip">IAM / Access Control</span>
+            <span class="about-chip">Alert Triage</span>
+            <span class="about-chip">SecOps Workflows</span>
+            <span class="about-chip">Outcome-Led Design</span>
+          </div>
+        </div>
+
+        <div class="about-quote">
+          <strong>"Good product management starts with the user's pain, not the solution."</strong><br>
+          Each case study in this portfolio begins with a real security engineer problem — fragmented visibility, alert fatigue, permission creep — before any feature is proposed.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FOOTER -->
 <footer class="footer">
