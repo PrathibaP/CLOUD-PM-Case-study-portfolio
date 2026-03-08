@@ -1,4 +1,4 @@
-Cloud Security Platform — Product Design Case Study
+Cloud Security Platform — Product Design Case Study - https://preeminent-chebakia-1a59ff.netlify.app/
 
 Designing simplified workflows for cloud security engineers to monitor infrastructure risks, investigate alerts, and manage identity permissions across multi-cloud environments.
 
